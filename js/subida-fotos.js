@@ -16,14 +16,19 @@ const URL_SUBIDA = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/ima
 
 /**
  * Sube un blob de imagen (ya comprimido por camara.js) a Cloudinary.
- * @param {Blob} blob - imagen comprimida en JPEG
+ * @param {Blob} blob - imagen comprimida (JPEG o PNG)
  * @returns {Promise<string>} URL pública y definitiva de la imagen
  */
 export async function subirFotoACloudinary(blob) {
+  // Detectamos la extensión según el tipo real del blob, para no forzar
+  // .jpg en archivos PNG (que perderían la transparencia si Cloudinary
+  // los reinterpretara mal).
+  const extension = blob.type === "image/png" ? "png" : "jpg";
+
   const formData = new FormData();
-  formData.append("file", blob);
+  formData.append("file", blob, `producto.${extension}`);
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-  formData.append("folder", "productos"); // las organiza en una carpeta dentro de Cloudinary
+  formData.append("folder", "productos");
 
   const respuesta = await fetch(URL_SUBIDA, {
     method: "POST",
