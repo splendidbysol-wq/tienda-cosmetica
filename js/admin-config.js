@@ -10,6 +10,8 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
+  deleteField,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -35,12 +37,14 @@ async function cargarConfigActual() {
       const preview = document.getElementById("preview-logo");
       preview.src = config.logoUrl;
       preview.classList.remove("oculto");
+      document.getElementById("boton-quitar-logo").classList.remove("oculto");
     }
     if (config.heroImagenUrl) {
       const preview = document.getElementById("preview-hero");
       preview.src = config.heroImagenUrl;
       preview.classList.remove("oculto");
       document.getElementById("config-hero-sin-recortar").checked = config.heroAjuste === "contain";
+      document.getElementById("boton-quitar-hero").classList.remove("oculto");
     }
   } catch (error) {
     console.warn("No se pudo leer la configuración actual:", error);
@@ -63,6 +67,9 @@ function conectarSelectorDeImagen(idInput, idPreview, guardarBlobEn, formatoForz
       const preview = document.getElementById(idPreview);
       preview.src = URL.createObjectURL(blob);
       preview.classList.remove("oculto");
+
+      const idBotonQuitar = idInput === "config-logo" ? "boton-quitar-logo" : "boton-quitar-hero";
+      document.getElementById(idBotonQuitar).classList.remove("oculto");
     } catch (error) {
       console.error(error);
       mostrarEstado("No se pudo procesar la imagen.", true);
@@ -107,6 +114,32 @@ async function guardarConfig(evento) {
   }
 }
 
+async function quitarImagen(campoUrl, campoExtra, idPreview, idBotonQuitar, mensajeExito) {
+  const confirmar = window.confirm("¿Seguro que querés quitar esta imagen? El catálogo va a volver al diseño por defecto en esa parte.");
+  if (!confirmar) return;
+
+  try {
+    mostrarEstado("Quitando imagen...");
+
+    const camposABorrar = { [campoUrl]: deleteField() };
+    if (campoExtra) camposABorrar[campoExtra] = deleteField();
+
+    await updateDoc(doc(db, "config", "local"), camposABorrar);
+
+    document.getElementById(idPreview).classList.add("oculto");
+    document.getElementById(idPreview).src = "";
+    document.getElementById(idBotonQuitar).classList.add("oculto");
+
+    if (campoUrl === "logoUrl") logoNuevo = null;
+    if (campoUrl === "heroImagenUrl") heroNuevo = null;
+
+    mostrarEstado(mensajeExito);
+  } catch (error) {
+    console.error(error);
+    mostrarEstado("❌ No se pudo quitar la imagen. Probá de nuevo.", true);
+  }
+}
+
 export function iniciarPanelConfig() {
   cargarConfigActual();
 
@@ -114,4 +147,12 @@ export function iniciarPanelConfig() {
   conectarSelectorDeImagen("config-hero", "preview-hero", (blob) => (heroNuevo = blob)); // auto-detecta formato
 
   document.getElementById("form-config").addEventListener("submit", guardarConfig);
+
+  document.getElementById("boton-quitar-logo").addEventListener("click", () =>
+    quitarImagen("logoUrl", null, "preview-logo", "boton-quitar-logo", "✅ Logo eliminado.")
+  );
+
+  document.getElementById("boton-quitar-hero").addEventListener("click", () =>
+    quitarImagen("heroImagenUrl", "heroAjuste", "preview-hero", "boton-quitar-hero", "✅ Imagen de fondo eliminada.")
+  );
 }
