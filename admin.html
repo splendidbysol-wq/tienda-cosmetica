@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de administración - Mi Tienda</title>
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/estilos.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+  <!-- Pantalla de login -->
+  <section id="pantalla-login">
+    <h1>Ingresar</h1>
+    <form id="form-login">
+      <input type="email" id="input-email" placeholder="Email" required />
+      <input type="password" id="input-password" placeholder="Contraseña" required />
+      <button type="submit">Ingresar</button>
+      <p id="error-login" class="estado error oculto"></p>
+    </form>
+  </section>
+
+  <!-- Panel de administración (oculto hasta hacer login) -->
+  <section id="pantalla-admin" class="oculto">
+    <header>
+      <h1>Cargar producto</h1>
+      <button id="boton-cerrar-sesion">Cerrar sesión</button>
+    </header>
+
+    <form id="form-producto">
+      <label>
+        Nombre
+        <input type="text" id="input-nombre" required />
+      </label>
+
+      <label>
+        Precio
+        <input type="number" id="input-precio" min="0" step="0.01" required />
+      </label>
+
+      <label>
+        Stock
+        <input type="number" id="input-stock" min="0" step="1" required />
+      </label>
+
+      <label>
+        Categoría
+        <input type="text" id="input-categoria" placeholder="cosmetica, ropa..." />
+      </label>
+
+      <label class="boton-foto">
+        📷 Sacar foto del producto
+        <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
+      </label>
+
+      <img id="preview-foto" class="preview-foto oculto" alt="Vista previa" />
+
+      <button type="submit" id="boton-guardar">Guardar producto</button>
+      <button type="button" id="boton-cancelar-edicion" class="boton-secundario oculto">Cancelar edición</button>
+      <p id="estado-formulario" class="estado"></p>
+    </form>
+
+    <hr />
+
+    <h2>Mis productos</h2>
+    <div id="lista-productos">
+      <p>Cargando productos...</p>
+    </div>
+  </section>
+
+  <script type="module">
+    import { iniciarSesion, cerrarSesion, observarSesion } from "./js/auth.js";
+    import { iniciarPanelProductos } from "./js/admin-productos.js";
+
+    const pantallaLogin = document.getElementById("pantalla-login");
+    const pantallaAdmin = document.getElementById("pantalla-admin");
+    const errorLogin = document.getElementById("error-login");
+
+    // Mostrar login o panel según el estado de sesión
+    observarSesion((usuario) => {
+      if (usuario) {
+        pantallaLogin.classList.add("oculto");
+        pantallaAdmin.classList.remove("oculto");
+      } else {
+        pantallaLogin.classList.remove("oculto");
+        pantallaAdmin.classList.add("oculto");
+      }
+    });
+
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("input-email").value;
+      const password = document.getElementById("input-password").value;
+
+      try {
+        await iniciarSesion(email, password);
+        errorLogin.classList.add("oculto");
+      } catch (error) {
+        errorLogin.textContent = "Email o contraseña incorrectos.";
+        errorLogin.classList.remove("oculto");
+      }
+    });
+
+    document.getElementById("boton-cerrar-sesion").addEventListener("click", () => {
+      cerrarSesion();
+    });
+
+    iniciarPanelProductos();
+  </script>
+</body>
+</html>
