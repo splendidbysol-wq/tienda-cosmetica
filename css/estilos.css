@@ -1,0 +1,398 @@
+/* estilos.css
+   Sistema de diseño "Etiqueta" — pensado para un catálogo revendible:
+   el acento (--color-acento) es la única variable que cada local nuevo
+   necesita cambiar para tener su propia identidad (ver js/tema.js).
+*/
+
+:root {
+  /* Paleta */
+  --color-tinta: #221F1D;       /* texto principal */
+  --color-tinta-suave: #6B6660; /* texto secundario */
+  --color-papel: #F6F4F0;       /* fondo general */
+  --color-papel-alt: #FFFFFF;   /* superficie de tarjetas */
+  --color-borde: #E4DFD5;       /* líneas finas */
+
+  --color-acento: #6B2545;        /* configurable por local */
+  --color-acento-suave: #F1E2E8;  /* configurable por local */
+  --color-exito: #4C7A5D;
+  --color-error: #B23A34;
+
+  /* Tipografía */
+  --fuente-display: "Fraunces", Georgia, serif;
+  --fuente-cuerpo: "Inter", system-ui, -apple-system, sans-serif;
+  --fuente-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--fuente-cuerpo);
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+header {
+  padding: 1.4rem 1.2rem 1.1rem;
+  background: var(--color-papel);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.eyebrow {
+  display: block;
+  font-family: var(--fuente-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-acento);
+  margin-bottom: 0.15rem;
+}
+
+header h1 {
+  font-family: var(--fuente-display);
+  font-weight: 600;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+
+main {
+  padding: 1.2rem;
+}
+
+/* Catálogo */
+#catalogo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 1rem;
+  padding-bottom: 5rem; /* espacio para no tapar con el botón flotante */
+}
+
+/* Cada producto se muestra como una etiqueta colgante:
+   esquina superior izquierda cortada + "ojal" perforado. */
+.producto-card {
+  position: relative;
+  background: var(--color-papel-alt);
+  clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%, 0 16px);
+  padding: 0.9rem 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(34, 31, 29, 0.06);
+}
+
+.producto-card::before {
+  /* el ojal de la etiqueta */
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-papel-alt);
+  border: 1.5px solid var(--color-tinta);
+  z-index: 2;
+}
+
+.producto-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.producto-card h3 {
+  font-family: var(--fuente-cuerpo);
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.producto-card .precio {
+  font-family: var(--fuente-mono);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--color-acento);
+  border-top: 1px dashed var(--color-borde);
+  padding-top: 0.4rem;
+}
+
+.producto-card .sin-stock {
+  font-family: var(--fuente-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-error);
+}
+
+.producto-card button {
+  padding: 0.6rem;
+  border: none;
+  border-radius: 3px;
+  background: var(--color-tinta);
+  color: var(--color-papel-alt);
+  font-family: var(--fuente-cuerpo);
+  font-weight: 500;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.producto-card button:hover:not(:disabled) {
+  background: var(--color-acento);
+}
+
+.producto-card button:disabled {
+  background: var(--color-borde);
+  color: var(--color-tinta-suave);
+  cursor: not-allowed;
+}
+
+/* Botón flotante del carrito */
+.boton-carrito-flotante {
+  position: fixed;
+  bottom: 1.2rem;
+  right: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-tinta);
+  color: var(--color-papel-alt);
+  border: none;
+  border-radius: 50px;
+  padding: 0.85rem 1.1rem;
+  box-shadow: 0 4px 14px rgba(34, 31, 29, 0.25);
+  cursor: pointer;
+  z-index: 20;
+}
+
+#contador-carrito {
+  font-family: var(--fuente-mono);
+  background: var(--color-acento);
+  color: #fff;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+}
+
+/* Drawer (carrito y checkout) */
+.fondo-drawer {
+  position: fixed;
+  inset: 0;
+  background: rgba(34, 31, 29, 0.45);
+  z-index: 30;
+}
+
+.drawer-carrito {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 90vw);
+  background: var(--color-papel-alt);
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  padding: 1.2rem;
+  box-shadow: -4px 0 20px rgba(34, 31, 29, 0.15);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.drawer-header h2 {
+  font-family: var(--fuente-display);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.boton-cerrar-icono {
+  background: none;
+  border: none;
+  color: var(--color-tinta);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+}
+
+#items-carrito {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.item-carrito {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.item-carrito img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.item-carrito-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.item-carrito-info span {
+  font-family: var(--fuente-mono);
+  color: var(--color-tinta-suave);
+  font-size: 0.72rem;
+}
+
+.item-carrito-cantidad {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--fuente-mono);
+}
+
+.item-carrito-cantidad button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--color-borde);
+  background: var(--color-papel-alt);
+  color: var(--color-tinta);
+  cursor: pointer;
+}
+
+.boton-quitar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-tinta-suave);
+  font-size: 1rem;
+}
+
+.drawer-footer {
+  border-top: 1px solid var(--color-borde);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.total-carrito {
+  font-family: var(--fuente-mono);
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.total-carrito strong {
+  color: var(--color-acento);
+}
+
+.boton-principal {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--color-acento);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--fuente-cuerpo);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#form-checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+#form-checkout label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--color-tinta-suave);
+}
+
+#form-checkout input,
+#form-checkout select {
+  padding: 0.7rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 4px;
+  font-family: var(--fuente-cuerpo);
+  font-size: 0.95rem;
+  color: var(--color-tinta);
+  background: var(--color-papel-alt);
+}
+
+#form-checkout input:focus,
+#form-checkout select:focus {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 1px;
+}
+
+.estado {
+  font-size: 0.85rem;
+  color: var(--color-tinta-suave);
+  min-height: 1.2rem;
+}
+
+.estado.error {
+  color: var(--color-error);
+}
+
+/* Banner instalación iOS */
+.banner-instalar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-tinta);
+  color: var(--color-papel-alt);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  z-index: 25;
+}
+
+.banner-instalar button {
+  background: var(--color-papel-alt);
+  color: var(--color-tinta);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.oculto {
+  display: none !important;
+}
+
+/* Movimiento reducido para quien lo prefiera */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
