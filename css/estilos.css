@@ -43,7 +43,7 @@ body {
 #hero {
   position: relative;
   overflow: hidden;
-  min-height: 200px;
+  min-height: 240px;
   display: flex;
   align-items: flex-end;
   padding: 0;
@@ -78,11 +78,10 @@ body {
 }
 
 #logo-negocio {
-  max-height: 110px;
-  max-width: 70%;
-  width: auto;
+  width: min(85%, 480px);
+  height: auto;
   object-fit: contain;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
 }
 
 /* Si hay logo, el nombre en texto se oculta (el logo ya lo incluye) */
