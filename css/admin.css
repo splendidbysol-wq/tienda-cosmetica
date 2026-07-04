@@ -196,6 +196,19 @@ hr {
   border-color: #e6c3c0 !important;
 }
 
+.checkbox-inline {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-tinta-suave);
+}
+
+.checkbox-inline input {
+  width: auto;
+}
+
 .oculto {
   display: none !important;
 }
