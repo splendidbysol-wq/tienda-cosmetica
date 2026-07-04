@@ -34,13 +34,53 @@ body {
   background: var(--color-papel);
   color: var(--color-tinta);
   -webkit-font-smoothing: antialiased;
+  /* Textura sutil para que el fondo no quede totalmente plano */
+  background-image: radial-gradient(var(--color-borde) 0.6px, transparent 0.6px);
+  background-size: 18px 18px;
 }
 
-/* Header */
-header {
-  padding: 1.4rem 1.2rem 1.1rem;
-  background: var(--color-papel);
-  border-bottom: 1px solid var(--color-borde);
+/* Hero: header decorado con imagen de fondo configurable por local */
+#hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0;
+  border-bottom: 3px solid var(--color-acento);
+}
+
+#hero-fondo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--color-acento), var(--color-tinta));
+  background-size: cover;
+  background-position: center;
+}
+
+#hero-fondo.con-imagen::after {
+  /* Velo oscuro sobre la foto para que el texto se lea bien */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(34,31,29,0.35), rgba(34,31,29,0.65));
+}
+
+.hero-contenido {
+  position: relative;
+  z-index: 1;
+  padding: 2.2rem 1.2rem 1.4rem;
+  width: 100%;
+}
+
+#logo-negocio {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--color-papel-alt);
+  margin-bottom: 0.6rem;
+  display: block;
 }
 
 .eyebrow {
@@ -49,15 +89,18 @@ header {
   font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-acento);
+  color: var(--color-papel-alt);
+  opacity: 0.85;
   margin-bottom: 0.15rem;
 }
 
-header h1 {
+#hero h1 {
   font-family: var(--fuente-display);
   font-weight: 600;
-  font-size: 1.6rem;
+  font-size: 1.9rem;
   letter-spacing: -0.01em;
+  color: var(--color-papel-alt);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 
 main {
