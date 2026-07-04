@@ -34,7 +34,14 @@ async function aplicarTema() {
     if (config.heroImagenUrl) {
       const heroFondo = document.getElementById("hero-fondo");
       if (heroFondo) {
-        heroFondo.style.backgroundImage = `url("${config.heroImagenUrl}")`;
+        const esCompleta = config.heroAjuste === "contain";
+        // Capa doble: la imagen arriba, el degradado bordó de respaldo abajo.
+        // Si el ajuste es "contain" (gráfico completo), el degradado se ve
+        // asomando en los costados donde la imagen no llega a cubrir.
+        heroFondo.style.backgroundImage = `url("${config.heroImagenUrl}"), linear-gradient(135deg, var(--color-acento), var(--color-tinta))`;
+        heroFondo.style.backgroundSize = esCompleta ? "contain, cover" : "cover, cover";
+        heroFondo.style.backgroundRepeat = "no-repeat, no-repeat";
+        heroFondo.style.backgroundPosition = "center, center";
         heroFondo.classList.add("con-imagen");
       }
     }
