@@ -40,21 +40,23 @@ async function cargarConfigActual() {
       const preview = document.getElementById("preview-hero");
       preview.src = config.heroImagenUrl;
       preview.classList.remove("oculto");
+      document.getElementById("config-hero-sin-recortar").checked = config.heroAjuste === "contain";
     }
   } catch (error) {
     console.warn("No se pudo leer la configuración actual:", error);
   }
 }
 
-function conectarSelectorDeImagen(idInput, idPreview, guardarBlobEn, formato = "image/jpeg") {
+function conectarSelectorDeImagen(idInput, idPreview, guardarBlobEn, formatoForzado = null) {
   document.getElementById(idInput).addEventListener("change", async (evento) => {
     const archivo = evento.target.files[0];
     if (!archivo) return;
 
     try {
-      // Ancho más grande que las fotos de producto (1200px), y formato
-      // según el tipo de imagen: PNG conserva transparencia (logos),
-      // JPEG pesa menos (fotos de fondo).
+      // Si no se fuerza un formato, se respeta el del archivo original:
+      // PNG se mantiene PNG (conserva transparencia), cualquier otra cosa
+      // se pasa a JPEG (pesa menos, ideal para fotos comunes).
+      const formato = formatoForzado || (archivo.type === "image/png" ? "image/png" : "image/jpeg");
       const blob = await comprimirImagen(archivo, 1200, 0.8, formato);
       guardarBlobEn(blob);
 
@@ -88,6 +90,9 @@ async function guardarConfig(evento) {
     }
     if (heroNuevo) {
       datosAGuardar.heroImagenUrl = await subirFotoACloudinary(heroNuevo);
+      datosAGuardar.heroAjuste = document.getElementById("config-hero-sin-recortar").checked
+        ? "contain"
+        : "cover";
     }
 
     // merge: true para no pisar campos que no se están editando ahora
@@ -106,7 +111,7 @@ export function iniciarPanelConfig() {
   cargarConfigActual();
 
   conectarSelectorDeImagen("config-logo", "preview-logo", (blob) => (logoNuevo = blob), "image/png");
-  conectarSelectorDeImagen("config-hero", "preview-hero", (blob) => (heroNuevo = blob), "image/jpeg");
+  conectarSelectorDeImagen("config-hero", "preview-hero", (blob) => (heroNuevo = blob)); // auto-detecta formato
 
   document.getElementById("form-config").addEventListener("submit", guardarConfig);
 }
