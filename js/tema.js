@@ -6,12 +6,6 @@
 import { db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-function tintaSuaveDesdeAcento() {
-  // Si el local no definió un color suave, no hacemos magia de contraste acá;
-  // simplemente dejamos el valor por defecto del CSS si no viene definido.
-  return null;
-}
-
 async function aplicarTema() {
   try {
     const snapshot = await getDoc(doc(db, "config", "local"));
@@ -27,6 +21,22 @@ async function aplicarTema() {
       const titulo = document.getElementById("nombre-negocio");
       if (titulo) titulo.textContent = config.nombreNegocio;
       document.title = config.nombreNegocio;
+    }
+
+    if (config.logoUrl) {
+      const logo = document.getElementById("logo-negocio");
+      if (logo) {
+        logo.src = config.logoUrl;
+        logo.classList.remove("oculto");
+      }
+    }
+
+    if (config.heroImagenUrl) {
+      const heroFondo = document.getElementById("hero-fondo");
+      if (heroFondo) {
+        heroFondo.style.backgroundImage = `url("${config.heroImagenUrl}")`;
+        heroFondo.classList.add("con-imagen");
+      }
     }
   } catch (error) {
     console.warn("No se pudo cargar la configuración de marca, se usan valores por defecto:", error);
