@@ -21,6 +21,9 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
   <link rel="stylesheet" href="css/estilos.css" />
+
+  <!-- EmailJS: para avisarle al vendedor por mail cuando entra un pedido -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -99,6 +102,11 @@
       </label>
 
       <div id="nota-metodo-pago" class="nota-pago oculto"></div>
+
+      <label>
+        Comprobante de pago (opcional)
+        <input type="file" id="checkout-comprobante" accept="image/*" />
+      </label>
 
       <button type="submit" class="boton-principal">Confirmar pedido</button>
       <p id="estado-checkout" class="estado"></p>
