@@ -42,6 +42,7 @@ function entrarModoEdicion(producto) {
   document.getElementById("input-precio").value = producto.precio ?? "";
   document.getElementById("input-stock").value = producto.stock ?? "";
   document.getElementById("input-categoria").value = producto.categoria || "";
+  document.getElementById("input-descripcion").value = producto.descripcion || "";
 
   if (producto.urlFoto) {
     document.getElementById("preview-foto").src = producto.urlFoto;
@@ -76,6 +77,7 @@ async function guardarProducto(evento) {
   const precio = parseFloat(document.getElementById("input-precio").value);
   const stock = parseInt(document.getElementById("input-stock").value, 10);
   const categoria = document.getElementById("input-categoria").value.trim();
+  const descripcion = document.getElementById("input-descripcion").value.trim();
 
   if (!nombre) return mostrarEstado("Falta el nombre del producto.", true);
   if (isNaN(precio) || precio < 0) return mostrarEstado("El precio no es válido.", true);
@@ -105,6 +107,7 @@ async function guardarProducto(evento) {
         precio,
         stock,
         categoria,
+        descripcion,
         urlFoto,
         actualizadoEn: serverTimestamp()
       });
@@ -116,6 +119,7 @@ async function guardarProducto(evento) {
         precio,
         stock,
         categoria,
+        descripcion,
         urlFoto,
         activo: true,
         creadoEn: serverTimestamp(),

@@ -32,6 +32,10 @@ async function cargarConfigActual() {
     const config = snapshot.data();
     if (config.nombreNegocio) document.getElementById("config-nombre").value = config.nombreNegocio;
     if (config.colorPrimario) document.getElementById("config-color").value = config.colorPrimario;
+    if (config.aliasMercadoPago) document.getElementById("config-alias-mp").value = config.aliasMercadoPago;
+    if (config.titularMercadoPago) document.getElementById("config-titular-mp").value = config.titularMercadoPago;
+    if (config.cuilMercadoPago) document.getElementById("config-cuil-mp").value = config.cuilMercadoPago;
+    if (config.urlFuncionMercadoPago) document.getElementById("config-url-mp").value = config.urlFuncionMercadoPago;
 
     if (config.logoUrl) {
       const preview = document.getElementById("preview-logo");
@@ -82,6 +86,10 @@ async function guardarConfig(evento) {
 
   const nombreNegocio = document.getElementById("config-nombre").value.trim();
   const colorPrimario = document.getElementById("config-color").value;
+  const aliasMercadoPago = document.getElementById("config-alias-mp").value.trim();
+  const titularMercadoPago = document.getElementById("config-titular-mp").value.trim();
+  const cuilMercadoPago = document.getElementById("config-cuil-mp").value.trim();
+  const urlFuncionMercadoPago = document.getElementById("config-url-mp").value.trim();
 
   try {
     mostrarEstado("Guardando...");
@@ -89,6 +97,10 @@ async function guardarConfig(evento) {
     const datosAGuardar = {
       nombreNegocio,
       colorPrimario,
+      aliasMercadoPago,
+      titularMercadoPago,
+      cuilMercadoPago,
+      urlFuncionMercadoPago,
       actualizadoEn: serverTimestamp()
     };
 

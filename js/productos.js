@@ -24,6 +24,7 @@ function renderProductos(productos) {
       <article class="producto-card" data-id="${p.id}">
         <img src="${p.urlFoto || "icons/icon-192.png"}" alt="${p.nombre}" />
         <h3>${p.nombre}</h3>
+        ${p.descripcion ? `<p class="descripcion">${p.descripcion}</p>` : ""}
         <p class="precio">$${p.precio}</p>
         ${sinStock ? '<p class="sin-stock">Sin stock</p>' : ""}
         <button

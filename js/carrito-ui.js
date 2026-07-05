@@ -11,6 +11,8 @@ import {
   obtenerCantidadTotal
 } from "./carrito.js";
 import { confirmarPedido } from "./checkout.js";
+import { db } from "./firebase-config.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const contadorCarrito = document.getElementById("contador-carrito");
 const itemsCarrito = document.getElementById("items-carrito");
@@ -20,6 +22,48 @@ const drawerCarrito = document.getElementById("drawer-carrito");
 const fondoDrawer = document.getElementById("fondo-drawer");
 const drawerCheckout = document.getElementById("drawer-checkout");
 const fondoCheckout = document.getElementById("fondo-checkout");
+
+let datosMercadoPago = null;
+
+async function cargarDatosMercadoPago() {
+  try {
+    const snapshot = await getDoc(doc(db, "config", "local"));
+    if (snapshot.exists()) {
+      const config = snapshot.data();
+      if (config.aliasMercadoPago) {
+        datosMercadoPago = {
+          alias: config.aliasMercadoPago,
+          titular: config.titularMercadoPago || "",
+          cuil: config.cuilMercadoPago || "",
+          urlFuncion: config.urlFuncionMercadoPago || null
+        };
+      }
+    }
+  } catch (error) {
+    console.warn("No se pudo cargar el alias de Mercado Pago:", error);
+  }
+}
+
+function actualizarNotaMetodoPago() {
+  const metodo = document.getElementById("checkout-metodo-pago").value;
+  const nota = document.getElementById("nota-metodo-pago");
+
+  if (metodo === "mercadopago" && datosMercadoPago?.urlFuncion) {
+    nota.innerHTML = `Al confirmar, te vamos a redirigir a Mercado Pago para pagar con tarjeta, dinero en cuenta, o QR.`;
+    nota.classList.remove("oculto");
+  } else if (metodo === "mercadopago" && datosMercadoPago) {
+    nota.innerHTML = `
+      Transferí el total a este alias de Mercado Pago:<br />
+      <strong>${datosMercadoPago.alias}</strong><br />
+      ${datosMercadoPago.titular ? `Titular: ${datosMercadoPago.titular}<br />` : ""}
+      ${datosMercadoPago.cuil ? `CUIL/CUIT: ${datosMercadoPago.cuil}<br />` : ""}
+      Guardá el comprobante para mostrarlo al recibir tu pedido.
+    `;
+    nota.classList.remove("oculto");
+  } else {
+    nota.classList.add("oculto");
+  }
+}
 
 function renderCarrito() {
   const carrito = obtenerCarrito();
@@ -118,10 +162,43 @@ async function manejarSubmitCheckout(evento) {
 
   try {
     mostrarEstadoCheckout("Confirmando pedido...");
-    const idPedido = await confirmarPedido(datosCliente, metodoPago);
+    const { id: idPedido, total } = await confirmarPedido(datosCliente, metodoPago);
+
+    // Si hay una función de cobro automático configurada y el cliente
+    // eligió Mercado Pago, lo mandamos a pagar de verdad en vez de
+    // solo mostrarle el alias.
+    if (metodoPago === "mercadopago" && datosMercadoPago?.urlFuncion) {
+      mostrarEstadoCheckout("Redirigiendo a Mercado Pago...");
+
+      const respuesta = await fetch(datosMercadoPago.urlFuncion, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          total,
+          pedidoId: idPedido,
+          descripcion: `Pedido ${idPedido.slice(0, 6)}`
+        })
+      });
+
+      const datos = await respuesta.json();
+
+      if (respuesta.ok && datos.initPoint) {
+        window.location.href = datos.initPoint;
+        return; // el navegador se va a Mercado Pago, no seguimos acá
+      } else {
+        console.error("Error creando el link de pago:", datos);
+        mostrarEstadoCheckout(
+          `✅ Pedido Nº ${idPedido.slice(0, 6)} guardado, pero no pudimos generar el link de pago. Contactanos para coordinar.`,
+          true
+        );
+        document.getElementById("form-checkout").reset();
+        return;
+      }
+    }
 
     mostrarEstadoCheckout(`✅ ¡Pedido confirmado! Nº ${idPedido.slice(0, 6)}`);
     document.getElementById("form-checkout").reset();
+    document.getElementById("nota-metodo-pago").classList.add("oculto");
 
     setTimeout(() => {
       cerrarCheckout();
@@ -156,5 +233,7 @@ document.getElementById("boton-cerrar-checkout").addEventListener("click", cerra
 document.getElementById("fondo-checkout").addEventListener("click", cerrarCheckout);
 
 document.getElementById("form-checkout").addEventListener("submit", manejarSubmitCheckout);
+document.getElementById("checkout-metodo-pago").addEventListener("change", actualizarNotaMetodoPago);
 
+cargarDatosMercadoPago();
 renderCarrito();
