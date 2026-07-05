@@ -52,6 +52,11 @@
         <input type="text" id="input-categoria" placeholder="cosmetica, ropa..." />
       </label>
 
+      <label>
+        Descripción
+        <textarea id="input-descripcion" rows="3" placeholder="Contale al cliente qué es, para qué sirve, de qué está hecho, etc."></textarea>
+      </label>
+
       <label class="boton-foto">
         📷 Sacar foto del producto
         <input type="file" id="input-foto" accept="image/*" capture="environment" hidden />
@@ -76,6 +81,26 @@
       <label>
         Color de marca
         <input type="color" id="config-color" value="#6B2545" />
+      </label>
+
+      <label>
+        Alias de Mercado Pago (para mostrarle al cliente al elegir ese método)
+        <input type="text" id="config-alias-mp" placeholder="splendid.by.sol" />
+      </label>
+
+      <label>
+        Titular de la cuenta (nombre y apellido)
+        <input type="text" id="config-titular-mp" placeholder="Sol Pérez" />
+      </label>
+
+      <label>
+        CUIL/CUIT del titular
+        <input type="text" id="config-cuil-mp" placeholder="27-12345678-9" />
+      </label>
+
+      <label>
+        URL de la función de cobro automático (opcional, la pasa la dueña de Mercado Pago)
+        <input type="text" id="config-url-mp" placeholder="https://mp-splendid-by-sol.usuario.workers.dev" />
       </label>
 
       <label class="boton-foto">
@@ -106,12 +131,27 @@
     <div id="lista-productos">
       <p>Cargando productos...</p>
     </div>
+
+    <hr />
+
+    <h2>Informes</h2>
+
+    <h3 class="subtitulo-informe">⚠️ Poco stock</h3>
+    <div id="informe-stock-bajo">
+      <p>Cargando...</p>
+    </div>
+
+    <h3 class="subtitulo-informe">🏆 Más vendidos</h3>
+    <div id="informe-mas-vendidos">
+      <p>Cargando...</p>
+    </div>
   </section>
 
   <script type="module">
     import { iniciarSesion, cerrarSesion, observarSesion } from "./js/auth.js";
     import { iniciarPanelProductos } from "./js/admin-productos.js";
     import { iniciarPanelConfig } from "./js/admin-config.js";
+    import { iniciarInformes } from "./js/admin-informes.js";
 
     const pantallaLogin = document.getElementById("pantalla-login");
     const pantallaAdmin = document.getElementById("pantalla-admin");
@@ -148,6 +188,7 @@
 
     iniciarPanelProductos();
     iniciarPanelConfig();
+    iniciarInformes();
   </script>
 </body>
 </html>
