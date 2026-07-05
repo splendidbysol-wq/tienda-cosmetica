@@ -27,6 +27,7 @@ const fondoCheckout = document.getElementById("fondo-checkout");
 
 let datosMercadoPago = null;
 let datosEmailJS = null;
+let datosEntrega = null;
 
 async function cargarDatosMercadoPago() {
   try {
@@ -53,6 +54,15 @@ async function cargarDatosMercadoPago() {
           window.emailjs.init(datosEmailJS.publicKey);
         }
       }
+
+      datosEntrega = {
+        montoEnvioGratis: config.montoEnvioGratis ?? null,
+        costoEnvio: config.costoEnvio ?? 0,
+        descripcionZonaCercana: config.descripcionZonaCercana || "",
+        telefonoConsultaEnvio: config.telefonoConsultaEnvio || "",
+        direccionRetiro: config.direccionRetiro || "",
+        horarioRetiro: config.horarioRetiro || ""
+      };
     }
   } catch (error) {
     console.warn("No se pudo cargar la configuración de pagos/avisos:", error);
@@ -89,7 +99,7 @@ async function subirComprobanteSiHay() {
   return subirFotoACloudinary(blob);
 }
 
-async function avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlComprobante }) {
+async function avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlComprobante, metodoEntrega, envioACoordinar }) {
   if (!datosEmailJS || !window.emailjs) return; // no configurado, no rompemos el flujo
 
   try {
@@ -99,6 +109,11 @@ async function avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlCom
       cliente_telefono: datosCliente.telefono,
       cliente_direccion: datosCliente.direccion || "(retira / sin dirección)",
       metodo_pago: metodoPago,
+      metodo_entrega: envioACoordinar
+        ? "Envío fuera de zona — coordinar costo con el cliente"
+        : metodoEntrega === "envio"
+        ? "Envío a domicilio"
+        : "Retira en el local",
       total: `$${total}`,
       comprobante_url: urlComprobante || "No adjuntó comprobante"
     });
@@ -107,6 +122,74 @@ async function avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlCom
     // ya quedó guardado en Firestore de todas formas.
     console.warn("No se pudo enviar el aviso por mail:", error);
   }
+}
+
+function calcularCostoEnvio(totalCarrito) {
+  if (!datosEntrega) return 0;
+  const { montoEnvioGratis, costoEnvio } = datosEntrega;
+  if (montoEnvioGratis != null && totalCarrito >= montoEnvioGratis) return 0;
+  return costoEnvio || 0;
+}
+
+function actualizarNotaEntrega() {
+  const metodoEntrega = document.getElementById("checkout-metodo-entrega").value;
+  const campoZona = document.getElementById("campo-zona-envio");
+  const zonaEnvio = document.getElementById("checkout-zona-envio").value;
+  const nota = document.getElementById("nota-entrega");
+  const campoDireccion = document.getElementById("campo-direccion");
+  const inputDireccion = document.getElementById("checkout-direccion");
+
+  const totalCarrito = calcularTotal(obtenerCarrito());
+
+  if (metodoEntrega === "retiro") {
+    campoZona.classList.add("oculto");
+    campoDireccion.classList.add("oculto");
+    inputDireccion.required = false;
+
+    if (datosEntrega?.direccionRetiro) {
+      nota.innerHTML = `
+        Retirás en: <strong>${datosEntrega.direccionRetiro}</strong><br />
+        ${datosEntrega.horarioRetiro ? `Horario: ${datosEntrega.horarioRetiro}` : ""}
+      `;
+      nota.classList.remove("oculto");
+    } else {
+      nota.classList.add("oculto");
+    }
+    return;
+  }
+
+  // Método = envío
+  campoZona.classList.remove("oculto");
+  campoDireccion.classList.remove("oculto");
+  inputDireccion.required = true;
+
+  if (zonaEnvio === "lejos") {
+    // Fuera de la zona con precio fijo: no cobramos automático, se coordina.
+    const contacto = datosEntrega?.telefonoConsultaEnvio;
+    nota.innerHTML = `
+      El costo de envío para tu zona se coordina directamente.
+      ${contacto ? `Escribinos al <strong>${contacto}</strong> antes o después de confirmar.` : "Nos vamos a contactar para coordinarlo."}
+    `;
+    nota.classList.remove("oculto");
+    return;
+  }
+
+  // Zona cercana: se aplica el costo fijo + umbral de envío gratis
+  const costoEnvio = calcularCostoEnvio(totalCarrito);
+  const faltaParaGratis = datosEntrega?.montoEnvioGratis
+    ? datosEntrega.montoEnvioGratis - totalCarrito
+    : null;
+  const totalConEnvio = totalCarrito + costoEnvio;
+  const etiquetaZona = datosEntrega?.descripcionZonaCercana ? ` (${datosEntrega.descripcionZonaCercana})` : "";
+
+  if (costoEnvio === 0 && datosEntrega?.montoEnvioGratis != null) {
+    nota.innerHTML = `🎉 Tu pedido tiene <strong>envío gratis</strong>${etiquetaZona}. Total: $${totalConEnvio}.`;
+  } else if (faltaParaGratis && faltaParaGratis > 0) {
+    nota.innerHTML = `Envío${etiquetaZona}: <strong>$${costoEnvio}</strong> (te faltan $${faltaParaGratis} en productos para que sea gratis). Total con envío: $${totalConEnvio}.`;
+  } else {
+    nota.innerHTML = `Envío${etiquetaZona}: <strong>$${costoEnvio}</strong>. Total con envío: $${totalConEnvio}.`;
+  }
+  nota.classList.remove("oculto");
 }
 
 function renderCarrito() {
@@ -177,6 +260,7 @@ function abrirCheckout() {
   cerrarDrawerCarrito();
   drawerCheckout.classList.remove("oculto");
   fondoCheckout.classList.remove("oculto");
+  actualizarNotaEntrega();
 }
 
 function cerrarCheckout() {
@@ -199,9 +283,14 @@ async function manejarSubmitCheckout(evento) {
     direccion: document.getElementById("checkout-direccion").value.trim()
   };
   const metodoPago = document.getElementById("checkout-metodo-pago").value;
+  const metodoEntrega = document.getElementById("checkout-metodo-entrega").value;
 
   if (!datosCliente.nombre || !datosCliente.telefono) {
     return mostrarEstadoCheckout("Completá nombre y teléfono.", true);
+  }
+
+  if (metodoEntrega === "envio" && !datosCliente.direccion) {
+    return mostrarEstadoCheckout("Completá la dirección para el envío.", true);
   }
 
   try {
@@ -214,11 +303,23 @@ async function manejarSubmitCheckout(evento) {
       console.warn("No se pudo subir el comprobante, se sigue sin él:", error);
     }
 
-    const { id: idPedido, total } = await confirmarPedido(datosCliente, metodoPago, urlComprobante);
+    const zonaEnvio = document.getElementById("checkout-zona-envio").value;
+    const envioACoordinar = metodoEntrega === "envio" && zonaEnvio === "lejos";
+    const costoEnvio =
+      metodoEntrega === "envio" && !envioACoordinar
+        ? calcularCostoEnvio(calcularTotal(obtenerCarrito()))
+        : 0;
+
+    const { id: idPedido, total } = await confirmarPedido(
+      datosCliente,
+      metodoPago,
+      urlComprobante,
+      { metodoEntrega, costoEnvio, envioACoordinar }
+    );
 
     // Aviso por mail al vendedor (si está configurado). No bloqueamos el
     // flujo si esto falla — el pedido ya quedó guardado de todas formas.
-    avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlComprobante });
+    avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlComprobante, metodoEntrega, envioACoordinar });
 
     // Si hay una función de cobro automático configurada y el cliente
     // eligió Mercado Pago, lo mandamos a pagar de verdad en vez de
@@ -255,6 +356,9 @@ async function manejarSubmitCheckout(evento) {
     mostrarEstadoCheckout(`✅ ¡Pedido confirmado! Nº ${idPedido.slice(0, 6)}`);
     document.getElementById("form-checkout").reset();
     document.getElementById("nota-metodo-pago").classList.add("oculto");
+    document.getElementById("nota-entrega").classList.add("oculto");
+    document.getElementById("campo-zona-envio").classList.add("oculto");
+    document.getElementById("campo-direccion").classList.remove("oculto");
 
     setTimeout(() => {
       cerrarCheckout();
@@ -290,6 +394,8 @@ document.getElementById("fondo-checkout").addEventListener("click", cerrarChecko
 
 document.getElementById("form-checkout").addEventListener("submit", manejarSubmitCheckout);
 document.getElementById("checkout-metodo-pago").addEventListener("change", actualizarNotaMetodoPago);
+document.getElementById("checkout-metodo-entrega").addEventListener("change", actualizarNotaEntrega);
+document.getElementById("checkout-zona-envio").addEventListener("change", actualizarNotaEntrega);
 
 cargarDatosMercadoPago();
 renderCarrito();

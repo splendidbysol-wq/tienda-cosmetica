@@ -39,6 +39,12 @@ async function cargarConfigActual() {
     if (config.emailjsServiceId) document.getElementById("config-emailjs-service").value = config.emailjsServiceId;
     if (config.emailjsTemplateId) document.getElementById("config-emailjs-template").value = config.emailjsTemplateId;
     if (config.emailjsPublicKey) document.getElementById("config-emailjs-publickey").value = config.emailjsPublicKey;
+    if (config.montoEnvioGratis != null) document.getElementById("config-monto-envio-gratis").value = config.montoEnvioGratis;
+    if (config.costoEnvio != null) document.getElementById("config-costo-envio").value = config.costoEnvio;
+    if (config.descripcionZonaCercana) document.getElementById("config-descripcion-zona").value = config.descripcionZonaCercana;
+    if (config.telefonoConsultaEnvio) document.getElementById("config-telefono-consulta-envio").value = config.telefonoConsultaEnvio;
+    if (config.direccionRetiro) document.getElementById("config-direccion-retiro").value = config.direccionRetiro;
+    if (config.horarioRetiro) document.getElementById("config-horario-retiro").value = config.horarioRetiro;
 
     if (config.logoUrl) {
       const preview = document.getElementById("preview-logo");
@@ -96,6 +102,12 @@ async function guardarConfig(evento) {
   const emailjsServiceId = document.getElementById("config-emailjs-service").value.trim();
   const emailjsTemplateId = document.getElementById("config-emailjs-template").value.trim();
   const emailjsPublicKey = document.getElementById("config-emailjs-publickey").value.trim();
+  const montoEnvioGratisRaw = document.getElementById("config-monto-envio-gratis").value;
+  const costoEnvioRaw = document.getElementById("config-costo-envio").value;
+  const descripcionZonaCercana = document.getElementById("config-descripcion-zona").value.trim();
+  const telefonoConsultaEnvio = document.getElementById("config-telefono-consulta-envio").value.trim();
+  const direccionRetiro = document.getElementById("config-direccion-retiro").value.trim();
+  const horarioRetiro = document.getElementById("config-horario-retiro").value.trim();
 
   try {
     mostrarEstado("Guardando...");
@@ -110,6 +122,12 @@ async function guardarConfig(evento) {
       emailjsServiceId,
       emailjsTemplateId,
       emailjsPublicKey,
+      montoEnvioGratis: montoEnvioGratisRaw === "" ? null : Number(montoEnvioGratisRaw),
+      costoEnvio: costoEnvioRaw === "" ? 0 : Number(costoEnvioRaw),
+      descripcionZonaCercana,
+      telefonoConsultaEnvio,
+      direccionRetiro,
+      horarioRetiro,
       actualizadoEn: serverTimestamp()
     };
 

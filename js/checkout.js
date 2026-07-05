@@ -21,14 +21,17 @@ import { obtenerCarrito, calcularTotal, vaciarCarrito } from "./carrito.js";
  * Si algún producto no tiene stock suficiente, no se descuenta nada
  * (la transacción se cancela entera) y se avisa cuál es el problema.
  */
-export async function confirmarPedido(datosCliente, metodoPago, urlComprobante = null) {
+export async function confirmarPedido(datosCliente, metodoPago, urlComprobante = null, datosEntregaPedido = null) {
   const carrito = obtenerCarrito();
 
   if (carrito.length === 0) {
     throw new Error("El carrito está vacío.");
   }
 
-  const total = calcularTotal(carrito);
+  const costoEnvio = datosEntregaPedido?.costoEnvio || 0;
+  const metodoEntrega = datosEntregaPedido?.metodoEntrega || "retiro";
+  const envioACoordinar = datosEntregaPedido?.envioACoordinar || false;
+  const total = calcularTotal(carrito) + costoEnvio;
 
   const idPedido = await runTransaction(db, async (transaction) => {
     // Paso 1: leer el stock actual de cada producto y validar
@@ -72,6 +75,9 @@ export async function confirmarPedido(datosCliente, metodoPago, urlComprobante =
       total,
       estado: "pendiente",
       metodoPago,
+      metodoEntrega,
+      costoEnvio,
+      envioACoordinar,
       comprobanteUrl: urlComprobante,
       creadoEn: serverTimestamp(),
       actualizadoEn: serverTimestamp()
