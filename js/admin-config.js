@@ -36,6 +36,9 @@ async function cargarConfigActual() {
     if (config.titularMercadoPago) document.getElementById("config-titular-mp").value = config.titularMercadoPago;
     if (config.cuilMercadoPago) document.getElementById("config-cuil-mp").value = config.cuilMercadoPago;
     if (config.urlFuncionMercadoPago) document.getElementById("config-url-mp").value = config.urlFuncionMercadoPago;
+    if (config.emailjsServiceId) document.getElementById("config-emailjs-service").value = config.emailjsServiceId;
+    if (config.emailjsTemplateId) document.getElementById("config-emailjs-template").value = config.emailjsTemplateId;
+    if (config.emailjsPublicKey) document.getElementById("config-emailjs-publickey").value = config.emailjsPublicKey;
 
     if (config.logoUrl) {
       const preview = document.getElementById("preview-logo");
@@ -90,6 +93,9 @@ async function guardarConfig(evento) {
   const titularMercadoPago = document.getElementById("config-titular-mp").value.trim();
   const cuilMercadoPago = document.getElementById("config-cuil-mp").value.trim();
   const urlFuncionMercadoPago = document.getElementById("config-url-mp").value.trim();
+  const emailjsServiceId = document.getElementById("config-emailjs-service").value.trim();
+  const emailjsTemplateId = document.getElementById("config-emailjs-template").value.trim();
+  const emailjsPublicKey = document.getElementById("config-emailjs-publickey").value.trim();
 
   try {
     mostrarEstado("Guardando...");
@@ -101,6 +107,9 @@ async function guardarConfig(evento) {
       titularMercadoPago,
       cuilMercadoPago,
       urlFuncionMercadoPago,
+      emailjsServiceId,
+      emailjsTemplateId,
+      emailjsPublicKey,
       actualizadoEn: serverTimestamp()
     };
 

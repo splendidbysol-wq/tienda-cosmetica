@@ -13,6 +13,8 @@ import {
 import { confirmarPedido } from "./checkout.js";
 import { db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { comprimirImagen } from "./camara.js";
+import { subirFotoACloudinary } from "./subida-fotos.js";
 
 const contadorCarrito = document.getElementById("contador-carrito");
 const itemsCarrito = document.getElementById("items-carrito");
@@ -24,6 +26,7 @@ const drawerCheckout = document.getElementById("drawer-checkout");
 const fondoCheckout = document.getElementById("fondo-checkout");
 
 let datosMercadoPago = null;
+let datosEmailJS = null;
 
 async function cargarDatosMercadoPago() {
   try {
@@ -38,9 +41,21 @@ async function cargarDatosMercadoPago() {
           urlFuncion: config.urlFuncionMercadoPago || null
         };
       }
+
+      if (config.emailjsServiceId && config.emailjsTemplateId && config.emailjsPublicKey) {
+        datosEmailJS = {
+          serviceId: config.emailjsServiceId,
+          templateId: config.emailjsTemplateId,
+          publicKey: config.emailjsPublicKey
+        };
+        // emailjs viene del script cargado en index.html (variable global)
+        if (window.emailjs) {
+          window.emailjs.init(datosEmailJS.publicKey);
+        }
+      }
     }
   } catch (error) {
-    console.warn("No se pudo cargar el alias de Mercado Pago:", error);
+    console.warn("No se pudo cargar la configuración de pagos/avisos:", error);
   }
 }
 
@@ -62,6 +77,35 @@ function actualizarNotaMetodoPago() {
     nota.classList.remove("oculto");
   } else {
     nota.classList.add("oculto");
+  }
+}
+
+async function subirComprobanteSiHay() {
+  const input = document.getElementById("checkout-comprobante");
+  const archivo = input.files[0];
+  if (!archivo) return null;
+
+  const blob = await comprimirImagen(archivo, 1000, 0.75, "image/jpeg");
+  return subirFotoACloudinary(blob);
+}
+
+async function avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlComprobante }) {
+  if (!datosEmailJS || !window.emailjs) return; // no configurado, no rompemos el flujo
+
+  try {
+    await window.emailjs.send(datosEmailJS.serviceId, datosEmailJS.templateId, {
+      pedido_id: idPedido.slice(0, 6),
+      cliente_nombre: datosCliente.nombre,
+      cliente_telefono: datosCliente.telefono,
+      cliente_direccion: datosCliente.direccion || "(retira / sin dirección)",
+      metodo_pago: metodoPago,
+      total: `$${total}`,
+      comprobante_url: urlComprobante || "No adjuntó comprobante"
+    });
+  } catch (error) {
+    // Si falla el mail, no le arruinamos la compra al cliente — el pedido
+    // ya quedó guardado en Firestore de todas formas.
+    console.warn("No se pudo enviar el aviso por mail:", error);
   }
 }
 
@@ -162,7 +206,19 @@ async function manejarSubmitCheckout(evento) {
 
   try {
     mostrarEstadoCheckout("Confirmando pedido...");
-    const { id: idPedido, total } = await confirmarPedido(datosCliente, metodoPago);
+
+    let urlComprobante = null;
+    try {
+      urlComprobante = await subirComprobanteSiHay();
+    } catch (error) {
+      console.warn("No se pudo subir el comprobante, se sigue sin él:", error);
+    }
+
+    const { id: idPedido, total } = await confirmarPedido(datosCliente, metodoPago, urlComprobante);
+
+    // Aviso por mail al vendedor (si está configurado). No bloqueamos el
+    // flujo si esto falla — el pedido ya quedó guardado de todas formas.
+    avisarPorMail({ idPedido, datosCliente, metodoPago, total, urlComprobante });
 
     // Si hay una función de cobro automático configurada y el cliente
     // eligió Mercado Pago, lo mandamos a pagar de verdad en vez de
