@@ -88,8 +88,27 @@
         Teléfono
         <input type="tel" id="checkout-telefono" required />
       </label>
+
       <label>
-        Dirección (si es con envío)
+        Método de entrega
+        <select id="checkout-metodo-entrega">
+          <option value="retiro">Retiro en el local</option>
+          <option value="envio">Envío a domicilio</option>
+        </select>
+      </label>
+
+      <label id="campo-zona-envio" class="oculto">
+        ¿A qué distancia estás?
+        <select id="checkout-zona-envio">
+          <option value="cercana">Zona cercana</option>
+          <option value="lejos">Más lejos (a coordinar)</option>
+        </select>
+      </label>
+
+      <div id="nota-entrega" class="nota-pago oculto"></div>
+
+      <label id="campo-direccion">
+        Dirección de envío
         <input type="text" id="checkout-direccion" />
       </label>
       <label>
