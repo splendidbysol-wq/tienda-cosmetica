@@ -47,7 +47,8 @@ form label {
   color: var(--color-tinta-suave);
 }
 
-form input {
+form input,
+form textarea {
   padding: 0.75rem;
   border: 1px solid var(--color-borde);
   border-radius: 4px;
@@ -57,7 +58,13 @@ form input {
   color: var(--color-tinta);
 }
 
-form input:focus {
+form textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+form input:focus,
+form textarea:focus {
   outline: 2px solid var(--color-acento);
   outline-offset: 1px;
 }
@@ -207,6 +214,64 @@ hr {
 
 .checkbox-inline input {
   width: auto;
+}
+
+.subtitulo-informe {
+  font-family: var(--fuente-cuerpo);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.6rem;
+}
+
+.lista-informe {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.lista-informe li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  background: var(--color-papel-alt);
+  font-size: 0.85rem;
+}
+
+.lista-informe strong {
+  font-family: var(--fuente-mono);
+  color: var(--color-acento);
+}
+
+.lista-informe strong.sin-stock {
+  color: var(--color-error);
+}
+
+.lista-ranking {
+  counter-reset: ranking;
+}
+
+.lista-ranking li {
+  position: relative;
+  padding-left: 2.2rem;
+}
+
+.lista-ranking li::before {
+  counter-increment: ranking;
+  content: counter(ranking);
+  position: absolute;
+  left: 0.6rem;
+  font-family: var(--fuente-mono);
+  font-weight: 600;
+  color: var(--color-acento);
+}
+
+.informe-ok {
+  font-size: 0.85rem;
+  color: var(--color-exito);
 }
 
 .oculto {
