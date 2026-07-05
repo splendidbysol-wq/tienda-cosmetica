@@ -274,6 +274,18 @@ hr {
   color: var(--color-exito);
 }
 
+.separador-suave {
+  border: none;
+  border-top: 1px dashed var(--color-borde);
+  margin: 0.4rem 0;
+}
+
+.ayuda-seccion {
+  font-size: 0.78rem;
+  color: var(--color-tinta-suave);
+  margin: -0.2rem 0 0.2rem;
+}
+
 .oculto {
   display: none !important;
 }
