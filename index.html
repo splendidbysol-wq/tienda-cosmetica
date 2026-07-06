@@ -27,6 +27,11 @@
 </head>
 <body>
 
+  <!-- Splash: pantalla de bienvenida con el logo, se desvanece sola -->
+  <div id="splash" class="splash">
+    <img id="splash-logo" class="splash-logo oculto" alt="" />
+  </div>
+
   <header id="hero">
     <div id="hero-fondo"></div>
     <div class="hero-contenido">
@@ -40,6 +45,22 @@
     <!-- Acá se renderiza el catálogo de productos dinámicamente -->
     <p>Cargando catálogo...</p>
   </main>
+
+  <!-- Modal de detalle de producto -->
+  <div id="fondo-detalle" class="fondo-drawer oculto"></div>
+  <div id="modal-detalle" class="modal-detalle oculto">
+    <button id="boton-cerrar-detalle" class="boton-cerrar-icono modal-cerrar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <img id="detalle-foto" src="" alt="" />
+    <div class="modal-detalle-contenido">
+      <h2 id="detalle-nombre"></h2>
+      <p id="detalle-precio" class="precio"></p>
+      <p id="detalle-descripcion" class="detalle-descripcion-completa"></p>
+      <p id="detalle-sin-stock" class="sin-stock oculto">Sin stock</p>
+      <button id="detalle-boton-agregar" class="boton-principal">Agregar al carrito</button>
+    </div>
+  </div>
 
   <!-- Botón flotante del carrito -->
   <button id="boton-abrir-carrito" class="boton-carrito-flotante">
@@ -97,14 +118,6 @@
         </select>
       </label>
 
-      <label id="campo-zona-envio" class="oculto">
-        ¿A qué distancia estás?
-        <select id="checkout-zona-envio">
-          <option value="cercana">Zona cercana</option>
-          <option value="lejos">Más lejos (a coordinar)</option>
-        </select>
-      </label>
-
       <div id="nota-entrega" class="nota-pago oculto"></div>
 
       <label id="campo-direccion">
@@ -114,7 +127,7 @@
       <label>
         Método de pago
         <select id="checkout-metodo-pago">
-          <option value="efectivo">Efectivo</option>
+          <option value="efectivo">Efectivo (al retirar / contra entrega)</option>
           <option value="transferencia">Transferencia</option>
           <option value="mercadopago">Mercado Pago (alias)</option>
         </select>
@@ -130,6 +143,14 @@
       <button type="submit" class="boton-principal">Confirmar pedido</button>
       <p id="estado-checkout" class="estado"></p>
     </form>
+
+    <div id="confirmacion-pedido" class="confirmacion-pedido oculto">
+      <div class="confirmacion-icono">🎉</div>
+      <h3>¡Pedido confirmado!</h3>
+      <p class="confirmacion-numero">Nº <strong id="confirmacion-numero-pedido"></strong></p>
+      <div id="confirmacion-detalle" class="confirmacion-detalle"></div>
+      <button id="boton-volver-catalogo" class="boton-principal">Volver al catálogo</button>
+    </div>
   </aside>
 
   <!-- Banner de instalación para iOS (Safari no muestra el prompt automático) -->
@@ -139,9 +160,11 @@
     <button id="cerrar-banner-ios">Entendido</button>
   </div>
 
+  <script src="js/splash.js"></script>
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/tema.js"></script>
   <script type="module" src="js/productos.js"></script>
+  <script type="module" src="js/producto-detalle.js"></script>
   <script type="module" src="js/carrito-ui.js"></script>
   <script src="js/pwa-ios.js"></script>
 
