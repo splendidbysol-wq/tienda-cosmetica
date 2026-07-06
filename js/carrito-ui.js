@@ -15,6 +15,7 @@ import { db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { comprimirImagen } from "./camara.js";
 import { subirFotoACloudinary } from "./subida-fotos.js";
+import { geocodificarDireccion, distanciaKm } from "./geo.js";
 
 const contadorCarrito = document.getElementById("contador-carrito");
 const itemsCarrito = document.getElementById("items-carrito");
@@ -58,7 +59,9 @@ async function cargarDatosMercadoPago() {
       datosEntrega = {
         montoEnvioGratis: config.montoEnvioGratis ?? null,
         costoEnvio: config.costoEnvio ?? 0,
-        descripcionZonaCercana: config.descripcionZonaCercana || "",
+        radioZonaCercanaKm: config.radioZonaCercanaKm ?? null,
+        latLocal: config.latLocal ?? null,
+        lngLocal: config.lngLocal ?? null,
         telefonoConsultaEnvio: config.telefonoConsultaEnvio || "",
         direccionRetiro: config.direccionRetiro || "",
         horarioRetiro: config.horarioRetiro || ""
@@ -133,16 +136,11 @@ function calcularCostoEnvio(totalCarrito) {
 
 function actualizarNotaEntrega() {
   const metodoEntrega = document.getElementById("checkout-metodo-entrega").value;
-  const campoZona = document.getElementById("campo-zona-envio");
-  const zonaEnvio = document.getElementById("checkout-zona-envio").value;
   const nota = document.getElementById("nota-entrega");
   const campoDireccion = document.getElementById("campo-direccion");
   const inputDireccion = document.getElementById("checkout-direccion");
 
-  const totalCarrito = calcularTotal(obtenerCarrito());
-
   if (metodoEntrega === "retiro") {
-    campoZona.classList.add("oculto");
     campoDireccion.classList.add("oculto");
     inputDireccion.required = false;
 
@@ -158,38 +156,41 @@ function actualizarNotaEntrega() {
     return;
   }
 
-  // Método = envío
-  campoZona.classList.remove("oculto");
+  // Método = envío: el costo se calcula recién al confirmar, según la
+  // distancia real entre tu dirección y el local (no lo elegís vos).
   campoDireccion.classList.remove("oculto");
   inputDireccion.required = true;
-
-  if (zonaEnvio === "lejos") {
-    // Fuera de la zona con precio fijo: no cobramos automático, se coordina.
-    const contacto = datosEntrega?.telefonoConsultaEnvio;
-    nota.innerHTML = `
-      El costo de envío para tu zona se coordina directamente.
-      ${contacto ? `Escribinos al <strong>${contacto}</strong> antes o después de confirmar.` : "Nos vamos a contactar para coordinarlo."}
-    `;
-    nota.classList.remove("oculto");
-    return;
-  }
-
-  // Zona cercana: se aplica el costo fijo + umbral de envío gratis
-  const costoEnvio = calcularCostoEnvio(totalCarrito);
-  const faltaParaGratis = datosEntrega?.montoEnvioGratis
-    ? datosEntrega.montoEnvioGratis - totalCarrito
-    : null;
-  const totalConEnvio = totalCarrito + costoEnvio;
-  const etiquetaZona = datosEntrega?.descripcionZonaCercana ? ` (${datosEntrega.descripcionZonaCercana})` : "";
-
-  if (costoEnvio === 0 && datosEntrega?.montoEnvioGratis != null) {
-    nota.innerHTML = `🎉 Tu pedido tiene <strong>envío gratis</strong>${etiquetaZona}. Total: $${totalConEnvio}.`;
-  } else if (faltaParaGratis && faltaParaGratis > 0) {
-    nota.innerHTML = `Envío${etiquetaZona}: <strong>$${costoEnvio}</strong> (te faltan $${faltaParaGratis} en productos para que sea gratis). Total con envío: $${totalConEnvio}.`;
-  } else {
-    nota.innerHTML = `Envío${etiquetaZona}: <strong>$${costoEnvio}</strong>. Total con envío: $${totalConEnvio}.`;
-  }
+  nota.innerHTML = `Calculamos el costo de envío según tu dirección al confirmar el pedido.`;
   nota.classList.remove("oculto");
+}
+
+/**
+ * Calcula el costo de envío real, comparando la distancia entre la
+ * dirección del cliente y la del local. Si no se puede calcular por
+ * cualquier motivo (dirección no encontrada, local sin configurar, etc.),
+ * el resultado por defecto es "a coordinar" — nunca asumimos que está
+ * cerca sin poder comprobarlo.
+ */
+async function calcularEnvioPorDistancia(direccionCliente) {
+  if (!datosEntrega?.latLocal || !datosEntrega?.lngLocal) {
+    // Sol todavía no cargó/geocodificó su dirección: no hay forma de calcular.
+    return { costoEnvio: 0, envioACoordinar: true, distanciaKm: null };
+  }
+
+  const coordsCliente = await geocodificarDireccion(direccionCliente);
+  if (!coordsCliente) {
+    return { costoEnvio: 0, envioACoordinar: true, distanciaKm: null };
+  }
+
+  const distancia = distanciaKm(datosEntrega.latLocal, datosEntrega.lngLocal, coordsCliente.lat, coordsCliente.lng);
+
+  if (datosEntrega.radioZonaCercanaKm != null && distancia > datosEntrega.radioZonaCercanaKm) {
+    return { costoEnvio: 0, envioACoordinar: true, distanciaKm: distancia };
+  }
+
+  const totalCarrito = calcularTotal(obtenerCarrito());
+  const costoEnvio = calcularCostoEnvio(totalCarrito);
+  return { costoEnvio, envioACoordinar: false, distanciaKm: distancia };
 }
 
 function renderCarrito() {
@@ -260,6 +261,8 @@ function abrirCheckout() {
   cerrarDrawerCarrito();
   drawerCheckout.classList.remove("oculto");
   fondoCheckout.classList.remove("oculto");
+  document.getElementById("form-checkout").classList.remove("oculto");
+  document.getElementById("confirmacion-pedido").classList.add("oculto");
   actualizarNotaEntrega();
 }
 
@@ -303,12 +306,16 @@ async function manejarSubmitCheckout(evento) {
       console.warn("No se pudo subir el comprobante, se sigue sin él:", error);
     }
 
-    const zonaEnvio = document.getElementById("checkout-zona-envio").value;
-    const envioACoordinar = metodoEntrega === "envio" && zonaEnvio === "lejos";
-    const costoEnvio =
-      metodoEntrega === "envio" && !envioACoordinar
-        ? calcularCostoEnvio(calcularTotal(obtenerCarrito()))
-        : 0;
+    let costoEnvio = 0;
+    let envioACoordinar = false;
+
+    if (metodoEntrega === "envio") {
+      mostrarEstadoCheckout("Calculando el costo de envío...");
+      const resultado = await calcularEnvioPorDistancia(datosCliente.direccion);
+      costoEnvio = resultado.costoEnvio;
+      envioACoordinar = resultado.envioACoordinar;
+      mostrarEstadoCheckout("Confirmando pedido...");
+    }
 
     const { id: idPedido, total } = await confirmarPedido(
       datosCliente,
@@ -353,21 +360,45 @@ async function manejarSubmitCheckout(evento) {
       }
     }
 
-    mostrarEstadoCheckout(`✅ ¡Pedido confirmado! Nº ${idPedido.slice(0, 6)}`);
-    document.getElementById("form-checkout").reset();
-    document.getElementById("nota-metodo-pago").classList.add("oculto");
-    document.getElementById("nota-entrega").classList.add("oculto");
-    document.getElementById("campo-zona-envio").classList.add("oculto");
-    document.getElementById("campo-direccion").classList.remove("oculto");
-
-    setTimeout(() => {
-      cerrarCheckout();
-      mostrarEstadoCheckout("");
-    }, 2500);
+    mostrarConfirmacionPedido({ idPedido, total, metodoPago, metodoEntrega, envioACoordinar, costoEnvio });
   } catch (error) {
     console.error(error);
     mostrarEstadoCheckout(error.message || "No se pudo confirmar el pedido.", true);
   }
+}
+
+function mostrarConfirmacionPedido({ idPedido, total, metodoPago, metodoEntrega, envioACoordinar, costoEnvio }) {
+  const etiquetasPago = {
+    efectivo: "Efectivo (al retirar / contra entrega)",
+    transferencia: "Transferencia",
+    mercadopago: "Mercado Pago (alias)"
+  };
+
+  let lineaEntrega;
+  if (metodoEntrega === "retiro") {
+    lineaEntrega = datosEntrega?.direccionRetiro
+      ? `Retirás en: ${datosEntrega.direccionRetiro}${datosEntrega.horarioRetiro ? ` (${datosEntrega.horarioRetiro})` : ""}`
+      : "Retiro en el local";
+  } else if (envioACoordinar) {
+    lineaEntrega = `Envío a coordinar${datosEntrega?.telefonoConsultaEnvio ? ` — escribinos al ${datosEntrega.telefonoConsultaEnvio}` : ""}`;
+  } else {
+    lineaEntrega = costoEnvio > 0 ? `Envío a domicilio ($${costoEnvio})` : "Envío a domicilio (gratis)";
+  }
+
+  document.getElementById("confirmacion-numero-pedido").textContent = idPedido.slice(0, 6);
+  document.getElementById("confirmacion-detalle").innerHTML = `
+    <p>${lineaEntrega}</p>
+    <p>Pago: ${etiquetasPago[metodoPago] || metodoPago}</p>
+    <p class="confirmacion-total">Total: $${total}</p>
+  `;
+
+  document.getElementById("form-checkout").classList.add("oculto");
+  document.getElementById("confirmacion-pedido").classList.remove("oculto");
+
+  document.getElementById("form-checkout").reset();
+  document.getElementById("nota-metodo-pago").classList.add("oculto");
+  document.getElementById("nota-entrega").classList.add("oculto");
+  document.getElementById("campo-direccion").classList.remove("oculto");
 }
 
 // Escuchar cuando el catálogo agrega un producto
@@ -391,11 +422,11 @@ document.getElementById("fondo-drawer").addEventListener("click", cerrarDrawerCa
 document.getElementById("boton-ir-checkout").addEventListener("click", abrirCheckout);
 document.getElementById("boton-cerrar-checkout").addEventListener("click", cerrarCheckout);
 document.getElementById("fondo-checkout").addEventListener("click", cerrarCheckout);
+document.getElementById("boton-volver-catalogo").addEventListener("click", cerrarCheckout);
 
 document.getElementById("form-checkout").addEventListener("submit", manejarSubmitCheckout);
 document.getElementById("checkout-metodo-pago").addEventListener("change", actualizarNotaMetodoPago);
 document.getElementById("checkout-metodo-entrega").addEventListener("change", actualizarNotaEntrega);
-document.getElementById("checkout-zona-envio").addEventListener("change", actualizarNotaEntrega);
 
 cargarDatosMercadoPago();
 renderCarrito();
