@@ -22,11 +22,13 @@ function renderProductos(productos) {
       const sinStock = (p.stock ?? 0) <= 0;
       return `
       <article class="producto-card" data-id="${p.id}">
-        <img src="${p.urlFoto || "icons/icon-192.png"}" alt="${p.nombre}" />
-        <h3>${p.nombre}</h3>
-        ${p.descripcion ? `<p class="descripcion">${p.descripcion}</p>` : ""}
-        <p class="precio">$${p.precio}</p>
-        ${sinStock ? '<p class="sin-stock">Sin stock</p>' : ""}
+        <div class="producto-card-clickeable" data-id="${p.id}">
+          <img src="${p.urlFoto || "icons/icon-192.png"}" alt="${p.nombre}" />
+          <h3>${p.nombre}</h3>
+          ${p.descripcion ? `<p class="descripcion">${p.descripcion}</p>` : ""}
+          <p class="precio">$${p.precio}</p>
+          ${sinStock ? '<p class="sin-stock">Sin stock</p>' : ""}
+        </div>
         <button
           class="boton-agregar-carrito"
           data-id="${p.id}"
@@ -42,7 +44,7 @@ function renderProductos(productos) {
     })
     .join("");
 
-  // Conectar los botones recién renderizados con el carrito
+  // Conectar los botones de agregar al carrito
   contenedorCatalogo.querySelectorAll(".boton-agregar-carrito").forEach((boton) => {
     boton.addEventListener("click", () => {
       window.dispatchEvent(
@@ -55,6 +57,17 @@ function renderProductos(productos) {
           }
         })
       );
+    });
+  });
+
+  // Conectar el resto de la tarjeta (foto, nombre, descripción) para
+  // abrir el detalle completo del producto
+  contenedorCatalogo.querySelectorAll(".producto-card-clickeable").forEach((zona) => {
+    zona.addEventListener("click", () => {
+      const producto = productos.find((p) => p.id === zona.dataset.id);
+      if (producto) {
+        window.dispatchEvent(new CustomEvent("ver-producto", { detail: producto }));
+      }
     });
   });
 }
