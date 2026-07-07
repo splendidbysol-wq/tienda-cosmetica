@@ -29,6 +29,13 @@ async function aplicarTema() {
         logo.src = config.logoUrl;
         logo.classList.remove("oculto");
       }
+
+      // Mismo logo en la pantalla de bienvenida (splash)
+      const logoSplash = document.getElementById("splash-logo");
+      if (logoSplash) {
+        logoSplash.src = config.logoUrl;
+        logoSplash.classList.remove("oculto");
+      }
     }
 
     if (config.heroImagenUrl) {
@@ -47,6 +54,10 @@ async function aplicarTema() {
     }
   } catch (error) {
     console.warn("No se pudo cargar la configuración de marca, se usan valores por defecto:", error);
+  } finally {
+    // Avisamos siempre (haya salido bien o mal) para que el splash no
+    // se quede esperando para siempre.
+    window.dispatchEvent(new CustomEvent("tema-listo"));
   }
 }
 
