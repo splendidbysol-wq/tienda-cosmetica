@@ -335,6 +335,26 @@ hr {
   color: var(--color-acento);
 }
 
+.tarjeta-pedido-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.boton-borrar-pedido {
+  background: none;
+  border: 1px solid #e6c3c0;
+  color: var(--color-error);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.boton-borrar-pedido:hover {
+  background: #fdf0ef;
+}
+
 .selector-estado {
   padding: 0.35rem 0.5rem;
   border-radius: 4px;
