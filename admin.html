@@ -99,6 +99,11 @@
       </label>
 
       <label>
+        WhatsApp para recibir comprobantes de pago
+        <input type="text" id="config-whatsapp-comprobantes" placeholder="11 2345 6789" />
+      </label>
+
+      <label>
         URL de la función de cobro automático (opcional, la pasa la dueña de Mercado Pago)
         <input type="text" id="config-url-mp" placeholder="https://mp-splendid-by-sol.usuario.workers.dev" />
       </label>
@@ -113,13 +118,18 @@
       </label>
 
       <label>
-        Costo de envío en zona cercana
-        <input type="number" id="config-costo-envio" min="0" placeholder="2000" />
+        Dirección del local (para calcular la distancia de envío)
+        <input type="text" id="config-direccion-local" placeholder="Av. Siempre Viva 742, San Justo, Buenos Aires" />
       </label>
 
       <label>
-        Descripción de la zona cercana
-        <input type="text" id="config-descripcion-zona" placeholder="Hasta 3km del local / Barrio tal" />
+        Radio de zona cercana (en km)
+        <input type="number" id="config-radio-zona-km" min="0" step="0.5" placeholder="3" />
+      </label>
+
+      <label>
+        Costo de envío en zona cercana
+        <input type="number" id="config-costo-envio" min="0" placeholder="2000" />
       </label>
 
       <label>
