@@ -197,6 +197,13 @@
 
     <hr />
 
+    <h2>Pedidos</h2>
+    <div id="lista-pedidos">
+      <p>Cargando pedidos...</p>
+    </div>
+
+    <hr />
+
     <h2>Informes</h2>
 
     <h3 class="subtitulo-informe">⚠️ Poco stock</h3>
@@ -215,6 +222,7 @@
     import { iniciarPanelProductos } from "./js/admin-productos.js";
     import { iniciarPanelConfig } from "./js/admin-config.js";
     import { iniciarInformes } from "./js/admin-informes.js";
+    import { iniciarPedidos } from "./js/admin-pedidos.js";
 
     const pantallaLogin = document.getElementById("pantalla-login");
     const pantallaAdmin = document.getElementById("pantalla-admin");
@@ -252,6 +260,7 @@
     iniciarPanelProductos();
     iniciarPanelConfig();
     iniciarInformes();
+    iniciarPedidos();
   </script>
 </body>
 </html>
