@@ -154,6 +154,40 @@ function calcularCostoEnvio(totalCarrito) {
   return costoEnvio || 0;
 }
 
+async function verificarDireccionEnVivo() {
+  const metodoEntrega = document.getElementById("checkout-metodo-entrega").value;
+  if (metodoEntrega !== "envio") return;
+
+  const direccion = document.getElementById("checkout-direccion").value.trim();
+  if (!direccion) return;
+
+  const nota = document.getElementById("nota-entrega");
+  nota.innerHTML = "Verificando la distancia a tu dirección...";
+  nota.classList.remove("oculto");
+
+  const resultado = await calcularEnvioPorDistancia(direccion);
+  const totalCarrito = calcularTotal(obtenerCarrito());
+  const totalConEnvio = totalCarrito + resultado.costoEnvio;
+
+  if (resultado.envioACoordinar) {
+    const contacto = datosEntrega?.telefonoConsultaEnvio;
+    const motivo = resultado.distanciaKm != null
+      ? `Estás a ${resultado.distanciaKm.toFixed(1)}km del local, fuera de la zona con precio fijo.`
+      : "No pudimos ubicar bien esa dirección.";
+    nota.innerHTML = `
+      ${motivo} El envío se coordina directamente.
+      ${contacto ? `Escribinos al <strong>${contacto}</strong> antes o después de confirmar.` : "Nos vamos a contactar para coordinarlo."}
+    `;
+  } else {
+    const distanciaTexto = resultado.distanciaKm != null ? ` (estás a ${resultado.distanciaKm.toFixed(1)}km)` : "";
+    if (resultado.costoEnvio === 0) {
+      nota.innerHTML = `🎉 Tu dirección está en zona de <strong>envío gratis</strong>${distanciaTexto}. Total: $${totalConEnvio}.`;
+    } else {
+      nota.innerHTML = `Tu dirección está en zona cercana${distanciaTexto}. Envío: <strong>$${resultado.costoEnvio}</strong>. Total con envío: $${totalConEnvio}.`;
+    }
+  }
+}
+
 function actualizarNotaEntrega() {
   const metodoEntrega = document.getElementById("checkout-metodo-entrega").value;
   const nota = document.getElementById("nota-entrega");
@@ -448,6 +482,7 @@ document.getElementById("boton-volver-catalogo").addEventListener("click", cerra
 document.getElementById("form-checkout").addEventListener("submit", manejarSubmitCheckout);
 document.getElementById("checkout-metodo-pago").addEventListener("change", actualizarNotaMetodoPago);
 document.getElementById("checkout-metodo-entrega").addEventListener("change", actualizarNotaEntrega);
+document.getElementById("checkout-direccion").addEventListener("blur", verificarDireccionEnVivo);
 
 cargarDatosMercadoPago();
 renderCarrito();

@@ -12,6 +12,7 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  runTransaction,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -40,6 +41,39 @@ function formatearFecha(timestamp) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+/**
+ * Devuelve al stock las unidades de un pedido cancelado. Se guarda un
+ * flag (stockDevuelto) en el pedido para no devolverlo dos veces si lo
+ * cancelan, lo cambian, y lo vuelven a cancelar.
+ */
+async function devolverStockSiCorresponde(pedido) {
+  if (pedido.stockDevuelto) return;
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const productos = pedido.productos || [];
+      const lecturas = [];
+
+      for (const item of productos) {
+        if (!item.productoId) continue;
+        const ref = doc(db, "productos", item.productoId);
+        const snap = await transaction.get(ref);
+        if (snap.exists()) {
+          lecturas.push({ ref, stockActual: snap.data().stock ?? 0, cantidad: item.cantidad || 0 });
+        }
+      }
+
+      for (const { ref, stockActual, cantidad } of lecturas) {
+        transaction.update(ref, { stock: stockActual + cantidad, actualizadoEn: serverTimestamp() });
+      }
+
+      transaction.update(doc(db, "pedidos", pedido.id), { stockDevuelto: true });
+    });
+  } catch (error) {
+    console.error("No se pudo devolver el stock del pedido cancelado:", error);
+  }
 }
 
 function renderPedidos(pedidos) {
@@ -80,6 +114,7 @@ function renderPedidos(pedidos) {
               ? `<a href="${p.comprobanteUrl}" target="_blank" rel="noopener" class="tarjeta-pedido-comprobante">Ver comprobante 📎</a>`
               : ""
           }
+          ${p.stockDevuelto ? `<p class="tarjeta-pedido-chico">✅ Stock devuelto al cancelar</p>` : ""}
 
           <div class="tarjeta-pedido-footer">
             <strong class="tarjeta-pedido-total">$${p.total}</strong>
@@ -97,11 +132,19 @@ function renderPedidos(pedidos) {
 
   contenedor.querySelectorAll(".selector-estado").forEach((select) => {
     select.addEventListener("change", async () => {
+      const pedido = pedidos.find((p) => p.id === select.dataset.id);
+      const nuevoEstado = select.value;
+      const eraCancelado = pedido?.estado === "cancelado";
+
       try {
         await updateDoc(doc(db, "pedidos", select.dataset.id), {
-          estado: select.value,
+          estado: nuevoEstado,
           actualizadoEn: serverTimestamp()
         });
+
+        if (nuevoEstado === "cancelado" && !eraCancelado && pedido) {
+          await devolverStockSiCorresponde(pedido);
+        }
       } catch (error) {
         console.error("No se pudo actualizar el estado:", error);
         alert("No se pudo actualizar el estado del pedido. Probá de nuevo.");
