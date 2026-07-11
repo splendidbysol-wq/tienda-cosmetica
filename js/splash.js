@@ -4,8 +4,8 @@
 // termine de cargar el logo real (evento "tema-listo"), pero nunca se
 // queda trabada: si algo falla o tarda de más, se cierra igual sola.
 
-const TIEMPO_MINIMO_VISIBLE = 700; // ms que se ve el logo como mínimo
-const TIEMPO_MAXIMO_ESPERA = 2500; // por si tema.js tarda o falla, no bloqueamos más que esto
+const TIEMPO_MINIMO_VISIBLE = 1500; // ms que se ve el logo como mínimo
+const TIEMPO_MAXIMO_ESPERA = 3000; // por si tema.js tarda o falla, no bloqueamos más que esto
 
 let yaSeOculto = false;
 

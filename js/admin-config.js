@@ -6,6 +6,7 @@
 import { db } from "./firebase-config.js";
 import { comprimirImagen } from "./camara.js";
 import { subirFotoACloudinary } from "./subida-fotos.js";
+import { geocodificarDireccion } from "./geo.js";
 import {
   doc,
   getDoc,
@@ -35,13 +36,15 @@ async function cargarConfigActual() {
     if (config.aliasMercadoPago) document.getElementById("config-alias-mp").value = config.aliasMercadoPago;
     if (config.titularMercadoPago) document.getElementById("config-titular-mp").value = config.titularMercadoPago;
     if (config.cuilMercadoPago) document.getElementById("config-cuil-mp").value = config.cuilMercadoPago;
+    if (config.whatsappComprobantes) document.getElementById("config-whatsapp-comprobantes").value = config.whatsappComprobantes;
     if (config.urlFuncionMercadoPago) document.getElementById("config-url-mp").value = config.urlFuncionMercadoPago;
     if (config.emailjsServiceId) document.getElementById("config-emailjs-service").value = config.emailjsServiceId;
     if (config.emailjsTemplateId) document.getElementById("config-emailjs-template").value = config.emailjsTemplateId;
     if (config.emailjsPublicKey) document.getElementById("config-emailjs-publickey").value = config.emailjsPublicKey;
     if (config.montoEnvioGratis != null) document.getElementById("config-monto-envio-gratis").value = config.montoEnvioGratis;
+    if (config.direccionLocal) document.getElementById("config-direccion-local").value = config.direccionLocal;
+    if (config.radioZonaCercanaKm != null) document.getElementById("config-radio-zona-km").value = config.radioZonaCercanaKm;
     if (config.costoEnvio != null) document.getElementById("config-costo-envio").value = config.costoEnvio;
-    if (config.descripcionZonaCercana) document.getElementById("config-descripcion-zona").value = config.descripcionZonaCercana;
     if (config.telefonoConsultaEnvio) document.getElementById("config-telefono-consulta-envio").value = config.telefonoConsultaEnvio;
     if (config.direccionRetiro) document.getElementById("config-direccion-retiro").value = config.direccionRetiro;
     if (config.horarioRetiro) document.getElementById("config-horario-retiro").value = config.horarioRetiro;
@@ -98,13 +101,15 @@ async function guardarConfig(evento) {
   const aliasMercadoPago = document.getElementById("config-alias-mp").value.trim();
   const titularMercadoPago = document.getElementById("config-titular-mp").value.trim();
   const cuilMercadoPago = document.getElementById("config-cuil-mp").value.trim();
+  const whatsappComprobantes = document.getElementById("config-whatsapp-comprobantes").value.trim();
   const urlFuncionMercadoPago = document.getElementById("config-url-mp").value.trim();
   const emailjsServiceId = document.getElementById("config-emailjs-service").value.trim();
   const emailjsTemplateId = document.getElementById("config-emailjs-template").value.trim();
   const emailjsPublicKey = document.getElementById("config-emailjs-publickey").value.trim();
   const montoEnvioGratisRaw = document.getElementById("config-monto-envio-gratis").value;
+  const direccionLocal = document.getElementById("config-direccion-local").value.trim();
+  const radioZonaCercanaKmRaw = document.getElementById("config-radio-zona-km").value;
   const costoEnvioRaw = document.getElementById("config-costo-envio").value;
-  const descripcionZonaCercana = document.getElementById("config-descripcion-zona").value.trim();
   const telefonoConsultaEnvio = document.getElementById("config-telefono-consulta-envio").value.trim();
   const direccionRetiro = document.getElementById("config-direccion-retiro").value.trim();
   const horarioRetiro = document.getElementById("config-horario-retiro").value.trim();
@@ -118,18 +123,36 @@ async function guardarConfig(evento) {
       aliasMercadoPago,
       titularMercadoPago,
       cuilMercadoPago,
+      whatsappComprobantes,
       urlFuncionMercadoPago,
       emailjsServiceId,
       emailjsTemplateId,
       emailjsPublicKey,
       montoEnvioGratis: montoEnvioGratisRaw === "" ? null : Number(montoEnvioGratisRaw),
       costoEnvio: costoEnvioRaw === "" ? 0 : Number(costoEnvioRaw),
-      descripcionZonaCercana,
+      radioZonaCercanaKm: radioZonaCercanaKmRaw === "" ? null : Number(radioZonaCercanaKmRaw),
+      direccionLocal,
       telefonoConsultaEnvio,
       direccionRetiro,
       horarioRetiro,
       actualizadoEn: serverTimestamp()
     };
+
+    // Si cargó (o cambió) la dirección del local, la convertimos a
+    // coordenadas ahora — así en el checkout no hay que hacerlo de nuevo
+    // cada vez, solo se geocodifica la dirección de cada cliente.
+    let huboAdvertencia = false;
+
+    if (direccionLocal) {
+      mostrarEstado("Ubicando la dirección del local...");
+      const coords = await geocodificarDireccion(direccionLocal);
+      if (coords) {
+        datosAGuardar.latLocal = coords.lat;
+        datosAGuardar.lngLocal = coords.lng;
+      } else {
+        huboAdvertencia = true;
+      }
+    }
 
     if (logoNuevo) {
       datosAGuardar.logoUrl = await subirFotoACloudinary(logoNuevo);
@@ -144,7 +167,14 @@ async function guardarConfig(evento) {
     // merge: true para no pisar campos que no se están editando ahora
     await setDoc(doc(db, "config", "local"), datosAGuardar, { merge: true });
 
-    mostrarEstado("✅ Configuración guardada. Los cambios se ven al refrescar el catálogo.");
+    if (huboAdvertencia) {
+      mostrarEstado(
+        "⚠️ Se guardó todo, pero no pudimos ubicar la dirección del local. Probá con calle, número, ciudad y provincia completos para que el cálculo de envío funcione.",
+        true
+      );
+    } else {
+      mostrarEstado("✅ Configuración guardada. Los cambios se ven al refrescar el catálogo.");
+    }
     logoNuevo = null;
     heroNuevo = null;
   } catch (error) {

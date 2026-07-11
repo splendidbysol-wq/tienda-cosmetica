@@ -40,6 +40,7 @@ async function cargarDatosMercadoPago() {
           alias: config.aliasMercadoPago,
           titular: config.titularMercadoPago || "",
           cuil: config.cuilMercadoPago || "",
+          whatsappComprobantes: config.whatsappComprobantes || "",
           urlFuncion: config.urlFuncionMercadoPago || null
         };
       }
@@ -79,18 +80,37 @@ function actualizarNotaMetodoPago() {
   if (metodo === "mercadopago" && datosMercadoPago?.urlFuncion) {
     nota.innerHTML = `Al confirmar, te vamos a redirigir a Mercado Pago para pagar con tarjeta, dinero en cuenta, o QR.`;
     nota.classList.remove("oculto");
-  } else if (metodo === "mercadopago" && datosMercadoPago) {
+    return;
+  }
+
+  // Transferencia o Mercado Pago (alias, sin cobro automático): mismos datos,
+  // porque en la práctica las dos son "transferile a este alias".
+  if ((metodo === "transferencia" || metodo === "mercadopago") && datosMercadoPago) {
     nota.innerHTML = `
       Transferí el total a este alias de Mercado Pago:<br />
       <strong>${datosMercadoPago.alias}</strong><br />
       ${datosMercadoPago.titular ? `Titular: ${datosMercadoPago.titular}<br />` : ""}
       ${datosMercadoPago.cuil ? `CUIL/CUIT: ${datosMercadoPago.cuil}<br />` : ""}
-      Guardá el comprobante para mostrarlo al recibir tu pedido.
+      ${
+        datosMercadoPago.whatsappComprobantes
+          ? `Mandanos el comprobante al WhatsApp: <strong>${datosMercadoPago.whatsappComprobantes}</strong>`
+          : "Guardá el comprobante para mostrarlo al recibir tu pedido."
+      }
     `;
     nota.classList.remove("oculto");
-  } else {
-    nota.classList.add("oculto");
+    return;
   }
+
+  if (metodo === "efectivo" && datosEntrega?.direccionRetiro) {
+    nota.innerHTML = `
+      Pago en efectivo al retirar en: <strong>${datosEntrega.direccionRetiro}</strong><br />
+      ${datosEntrega.horarioRetiro ? `Horario: ${datosEntrega.horarioRetiro}` : ""}
+    `;
+    nota.classList.remove("oculto");
+    return;
+  }
+
+  nota.classList.add("oculto");
 }
 
 async function subirComprobanteSiHay() {
@@ -264,6 +284,7 @@ function abrirCheckout() {
   document.getElementById("form-checkout").classList.remove("oculto");
   document.getElementById("confirmacion-pedido").classList.add("oculto");
   actualizarNotaEntrega();
+  actualizarNotaMetodoPago();
 }
 
 function cerrarCheckout() {
