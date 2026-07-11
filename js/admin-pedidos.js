@@ -12,6 +12,7 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  deleteDoc,
   runTransaction,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -76,6 +77,45 @@ async function devolverStockSiCorresponde(pedido) {
   }
 }
 
+/**
+ * Elimina un pedido para siempre. Si el stock de ese pedido todavía no
+ * había sido devuelto (por ejemplo, se borra sin haberlo cancelado antes),
+ * lo devuelve como parte de la misma operación, para no perder mercadería.
+ */
+async function eliminarPedido(pedido) {
+  const confirmar = window.confirm(
+    `¿Eliminar el pedido #${pedido.id.slice(0, 6)} para siempre? Esta acción no se puede deshacer.`
+  );
+  if (!confirmar) return;
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      if (!pedido.stockDevuelto) {
+        const productos = pedido.productos || [];
+        const lecturas = [];
+
+        for (const item of productos) {
+          if (!item.productoId) continue;
+          const ref = doc(db, "productos", item.productoId);
+          const snap = await transaction.get(ref);
+          if (snap.exists()) {
+            lecturas.push({ ref, stockActual: snap.data().stock ?? 0, cantidad: item.cantidad || 0 });
+          }
+        }
+
+        for (const { ref, stockActual, cantidad } of lecturas) {
+          transaction.update(ref, { stock: stockActual + cantidad, actualizadoEn: serverTimestamp() });
+        }
+      }
+
+      transaction.delete(doc(db, "pedidos", pedido.id));
+    });
+  } catch (error) {
+    console.error("No se pudo eliminar el pedido:", error);
+    alert("No se pudo eliminar el pedido. Probá de nuevo.");
+  }
+}
+
 function renderPedidos(pedidos) {
   const contenedor = document.getElementById("lista-pedidos");
 
@@ -118,12 +158,15 @@ function renderPedidos(pedidos) {
 
           <div class="tarjeta-pedido-footer">
             <strong class="tarjeta-pedido-total">$${p.total}</strong>
-            <select class="selector-estado" data-id="${p.id}">
-              ${ESTADOS.map(
-                (estado) =>
-                  `<option value="${estado}" ${p.estado === estado ? "selected" : ""}>${ETIQUETAS_ESTADO[estado]}</option>`
-              ).join("")}
-            </select>
+            <div class="tarjeta-pedido-acciones">
+              <select class="selector-estado" data-id="${p.id}">
+                ${ESTADOS.map(
+                  (estado) =>
+                    `<option value="${estado}" ${p.estado === estado ? "selected" : ""}>${ETIQUETAS_ESTADO[estado]}</option>`
+                ).join("")}
+              </select>
+              <button class="boton-borrar-pedido" data-id="${p.id}" title="Eliminar pedido">🗑</button>
+            </div>
           </div>
         </div>
       `;
@@ -149,6 +192,13 @@ function renderPedidos(pedidos) {
         console.error("No se pudo actualizar el estado:", error);
         alert("No se pudo actualizar el estado del pedido. Probá de nuevo.");
       }
+    });
+  });
+
+  contenedor.querySelectorAll(".boton-borrar-pedido").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const pedido = pedidos.find((p) => p.id === boton.dataset.id);
+      if (pedido) eliminarPedido(pedido);
     });
   });
 }
