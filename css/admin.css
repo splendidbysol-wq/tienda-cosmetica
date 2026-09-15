@@ -364,6 +364,22 @@ hr {
   color: var(--color-tinta);
 }
 
+#vista-previa-carga-masiva {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  background: var(--color-papel);
+  margin-top: 0.5rem;
+}
+
+#resumen-carga-masiva {
+  font-size: 0.85rem;
+  color: var(--color-tinta);
+}
+
 .oculto {
   display: none !important;
 }
