@@ -10,6 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/estilos.css" />
   <link rel="stylesheet" href="css/admin.css" />
+
+  <!-- Para leer archivos Excel/CSV de carga masiva de productos -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -68,6 +71,33 @@
       <button type="button" id="boton-cancelar-edicion" class="boton-secundario oculto">Cancelar edición</button>
       <p id="estado-formulario" class="estado"></p>
     </form>
+
+    <hr />
+
+    <h2>Carga masiva por planilla</h2>
+    <p class="ayuda-seccion">
+      Para cargar muchos productos de una — sin foto, esa se agrega después
+      cuando haya tiempo. Bajá la planilla de ejemplo, completala en Excel
+      o Google Sheets, y subila acá.
+    </p>
+
+    <button type="button" id="boton-descargar-plantilla" class="boton-secundario">
+      Descargar planilla de ejemplo
+    </button>
+
+    <label class="boton-foto">
+      📄 Elegir archivo (.xlsx o .csv)
+      <input type="file" id="input-carga-masiva" accept=".xlsx,.xls,.csv" hidden />
+    </label>
+
+    <div id="vista-previa-carga-masiva" class="oculto">
+      <p id="resumen-carga-masiva"></p>
+      <button type="button" id="boton-confirmar-carga-masiva" class="boton-principal">
+        Importar estos productos
+      </button>
+    </div>
+
+    <p id="estado-carga-masiva" class="estado"></p>
 
     <hr />
 
@@ -204,6 +234,13 @@
 
     <hr />
 
+    <h2>Ventas</h2>
+    <div id="resumen-ventas">
+      <p>Cargando...</p>
+    </div>
+
+    <hr />
+
     <h2>Informes</h2>
 
     <h3 class="subtitulo-informe">⚠️ Poco stock</h3>
@@ -220,8 +257,10 @@
   <script type="module">
     import { iniciarSesion, cerrarSesion, observarSesion } from "./js/auth.js";
     import { iniciarPanelProductos } from "./js/admin-productos.js";
+    import { iniciarCargaMasiva } from "./js/admin-carga-masiva.js";
     import { iniciarPanelConfig } from "./js/admin-config.js";
     import { iniciarInformes } from "./js/admin-informes.js";
+    import { iniciarResumenVentas } from "./js/admin-ventas.js";
     import { iniciarPedidos } from "./js/admin-pedidos.js";
 
     const pantallaLogin = document.getElementById("pantalla-login");
@@ -258,8 +297,10 @@
     });
 
     iniciarPanelProductos();
+    iniciarCargaMasiva();
     iniciarPanelConfig();
     iniciarInformes();
+    iniciarResumenVentas();
     iniciarPedidos();
   </script>
 </body>
