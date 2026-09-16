@@ -267,11 +267,26 @@
     const pantallaAdmin = document.getElementById("pantalla-admin");
     const errorLogin = document.getElementById("error-login");
 
+    let panelesYaIniciados = false;
+
     // Mostrar login o panel según el estado de sesión
     observarSesion((usuario) => {
       if (usuario) {
         pantallaLogin.classList.add("oculto");
         pantallaAdmin.classList.remove("oculto");
+
+        // Recién acá arrancamos los módulos que leen Firestore, para no
+        // pedirle datos antes de que el login esté confirmado (eso
+        // disparaba errores de "permissions" en la consola).
+        if (!panelesYaIniciados) {
+          panelesYaIniciados = true;
+          iniciarPanelProductos();
+          iniciarCargaMasiva();
+          iniciarPanelConfig();
+          iniciarInformes();
+          iniciarResumenVentas();
+          iniciarPedidos();
+        }
       } else {
         pantallaLogin.classList.remove("oculto");
         pantallaAdmin.classList.add("oculto");
@@ -295,13 +310,6 @@
     document.getElementById("boton-cerrar-sesion").addEventListener("click", () => {
       cerrarSesion();
     });
-
-    iniciarPanelProductos();
-    iniciarCargaMasiva();
-    iniciarPanelConfig();
-    iniciarInformes();
-    iniciarResumenVentas();
-    iniciarPedidos();
   </script>
 </body>
 </html>
