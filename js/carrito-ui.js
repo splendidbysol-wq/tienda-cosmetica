@@ -73,9 +73,23 @@ async function cargarDatosMercadoPago() {
   }
 }
 
+/**
+ * El comprobante es obligatorio cuando el pago se hace por transferencia
+ * "manual" (alias) — para Efectivo no aplica, y para Mercado Pago solo si
+ * NO hay cobro automático configurado (si lo hay, el pago se confirma
+ * solo, no hace falta comprobante).
+ */
+function requiereComprobante(metodoPago) {
+  if (metodoPago === "transferencia") return true;
+  if (metodoPago === "mercadopago" && !datosMercadoPago?.urlFuncion) return true;
+  return false;
+}
+
 function actualizarNotaMetodoPago() {
   const metodo = document.getElementById("checkout-metodo-pago").value;
   const nota = document.getElementById("nota-metodo-pago");
+
+  actualizarEtiquetaComprobante(metodo);
 
   if (metodo === "mercadopago" && datosMercadoPago?.urlFuncion) {
     nota.innerHTML = `Al confirmar, te vamos a redirigir a Mercado Pago para pagar con tarjeta, dinero en cuenta, o QR.`;
@@ -111,6 +125,24 @@ function actualizarNotaMetodoPago() {
   }
 
   nota.classList.add("oculto");
+}
+
+/**
+ * Cambia el texto de la etiqueta "Comprobante de pago" para avisar si
+ * es obligatorio u opcional, según el método de pago elegido.
+ */
+function actualizarEtiquetaComprobante(metodoPago) {
+  const input = document.getElementById("checkout-comprobante");
+  const label = input.closest("label");
+  if (!label) return;
+
+  const obligatorio = requiereComprobante(metodoPago);
+  const nodoTexto = label.firstChild;
+  if (nodoTexto && nodoTexto.nodeType === Node.TEXT_NODE) {
+    nodoTexto.textContent = obligatorio
+      ? "Comprobante de pago (obligatorio para este método) "
+      : "Comprobante de pago (opcional) ";
+  }
 }
 
 async function subirComprobanteSiHay() {
@@ -349,6 +381,13 @@ async function manejarSubmitCheckout(evento) {
 
   if (metodoEntrega === "envio" && !datosCliente.direccion) {
     return mostrarEstadoCheckout("Completá la dirección para el envío.", true);
+  }
+
+  if (requiereComprobante(metodoPago)) {
+    const archivoComprobante = document.getElementById("checkout-comprobante").files[0];
+    if (!archivoComprobante) {
+      return mostrarEstadoCheckout("Subí el comprobante de pago para poder confirmar el pedido.", true);
+    }
   }
 
   try {
