@@ -145,6 +145,52 @@ function actualizarEtiquetaComprobante(metodoPago) {
   }
 }
 
+/**
+ * Crea (una sola vez) el botón "Compartir por WhatsApp" justo después
+ * del campo de comprobante. Solo funciona en celulares cuyo navegador
+ * soporte compartir archivos nativamente (Web Share API) — en el resto
+ * simplemente no aparece, sin romper nada.
+ */
+function crearBotonCompartirWhatsApp() {
+  const input = document.getElementById("checkout-comprobante");
+  const label = input.closest("label");
+  if (!label || document.getElementById("boton-compartir-comprobante")) return;
+
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.id = "boton-compartir-comprobante";
+  boton.className = "oculto";
+  boton.textContent = "📲 Compartir por WhatsApp";
+  boton.style.cssText =
+    "width:100%;padding:0.7rem;margin:0.4rem 0;border:1px solid var(--color-acento);" +
+    "background:transparent;color:var(--color-acento);border-radius:4px;font-weight:600;" +
+    "cursor:pointer;font-family:inherit;font-size:0.85rem;";
+  label.insertAdjacentElement("afterend", boton);
+
+  boton.addEventListener("click", async () => {
+    const archivo = input.files[0];
+    if (!archivo) return;
+
+    try {
+      await navigator.share({
+        files: [archivo],
+        title: "Comprobante de pago",
+        text: "Te mando el comprobante de mi pedido."
+      });
+    } catch (error) {
+      // El usuario canceló el share, o algo falló — no es grave,
+      // el comprobante ya se sube igual por la web.
+      console.warn("No se compartió el comprobante por WhatsApp:", error);
+    }
+  });
+
+  input.addEventListener("change", () => {
+    const archivo = input.files[0];
+    const soportado = archivo && navigator.canShare && navigator.canShare({ files: [archivo] });
+    boton.classList.toggle("oculto", !soportado);
+  });
+}
+
 async function subirComprobanteSiHay() {
   const input = document.getElementById("checkout-comprobante");
   const archivo = input.files[0];
@@ -523,5 +569,6 @@ document.getElementById("checkout-metodo-pago").addEventListener("change", actua
 document.getElementById("checkout-metodo-entrega").addEventListener("change", actualizarNotaEntrega);
 document.getElementById("checkout-direccion").addEventListener("blur", verificarDireccionEnVivo);
 
+crearBotonCompartirWhatsApp();
 cargarDatosMercadoPago();
 renderCarrito();
