@@ -75,15 +75,14 @@ async function cargarDatosMercadoPago() {
 }
 
 /**
- * El comprobante es obligatorio cuando el pago se hace por transferencia
- * "manual" (alias) — para Efectivo no aplica, y para Mercado Pago solo si
- * NO hay cobro automático configurado (si lo hay, el pago se confirma
- * solo, no hace falta comprobante).
+ * El comprobante es obligatorio SOLO para transferencia bancaria
+ * tradicional, donde no hay forma de saber automáticamente si llegó.
+ * Para Mercado Pago (con link de pago, cobro automático, o alias), el
+ * pago entra directo a la cuenta de Mercado Pago de la vendedora y ella
+ * recibe la notificación sola — no hace falta pedirle nada al cliente.
  */
 function requiereComprobante(metodoPago) {
-  if (metodoPago === "transferencia") return true;
-  if (metodoPago === "mercadopago" && !datosMercadoPago?.urlFuncion) return true;
-  return false;
+  return metodoPago === "transferencia";
 }
 
 function actualizarNotaMetodoPago() {
@@ -109,22 +108,27 @@ function actualizarNotaMetodoPago() {
       <a href="${datosMercadoPago.linkPago}" target="_blank" rel="noopener"
          style="display:inline-block;margin-top:0.5rem;padding:0.6rem 1rem;background:var(--color-acento);color:#fff;border-radius:4px;text-decoration:none;font-weight:600;">
         Abrir Mercado Pago para pagar
-      </a>
+      </a><br />
+      <span style="font-size:0.78rem;opacity:0.8;">No hace falta que nos mandes comprobante, nos llega la notificación del pago sola.</span>
     `;
     nota.classList.remove("oculto");
     return;
   }
 
-  // Transferencia o Mercado Pago (alias, sin cobro automático): mismos datos,
-  // porque en la práctica las dos son "transferile a este alias".
+  // Transferencia bancaria o Mercado Pago (alias, sin link ni cobro
+  // automático configurado): mismos datos de alias, pero el texto
+  // cambia según si hace falta comprobante o no.
   if ((metodo === "transferencia" || metodo === "mercadopago") && datosMercadoPago) {
+    const esMercadoPago = metodo === "mercadopago";
     nota.innerHTML = `
-      Transferí el total a este alias de Mercado Pago:<br />
+      Transferí el total a este alias${esMercadoPago ? " de Mercado Pago" : ""}:<br />
       <strong>${datosMercadoPago.alias}</strong><br />
       ${datosMercadoPago.titular ? `Titular: ${datosMercadoPago.titular}<br />` : ""}
       ${datosMercadoPago.cuil ? `CUIL/CUIT: ${datosMercadoPago.cuil}<br />` : ""}
       ${
-        datosMercadoPago.whatsappComprobantes
+        esMercadoPago
+          ? `<span style="font-size:0.78rem;opacity:0.8;">No hace falta que nos mandes comprobante, nos llega la notificación del pago sola.</span>`
+          : datosMercadoPago.whatsappComprobantes
           ? `Mandanos el comprobante al WhatsApp: <strong>${datosMercadoPago.whatsappComprobantes}</strong>`
           : "Guardá el comprobante para mostrarlo al recibir tu pedido."
       }
