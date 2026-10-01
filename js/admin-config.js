@@ -38,6 +38,7 @@ async function cargarConfigActual() {
     if (config.cuilMercadoPago) document.getElementById("config-cuil-mp").value = config.cuilMercadoPago;
     if (config.whatsappComprobantes) document.getElementById("config-whatsapp-comprobantes").value = config.whatsappComprobantes;
     if (config.urlFuncionMercadoPago) document.getElementById("config-url-mp").value = config.urlFuncionMercadoPago;
+    if (config.linkPagoMercadoPago) document.getElementById("config-link-pago-mp").value = config.linkPagoMercadoPago;
     if (config.emailjsServiceId) document.getElementById("config-emailjs-service").value = config.emailjsServiceId;
     if (config.emailjsTemplateId) document.getElementById("config-emailjs-template").value = config.emailjsTemplateId;
     if (config.emailjsPublicKey) document.getElementById("config-emailjs-publickey").value = config.emailjsPublicKey;
@@ -103,6 +104,7 @@ async function guardarConfig(evento) {
   const cuilMercadoPago = document.getElementById("config-cuil-mp").value.trim();
   const whatsappComprobantes = document.getElementById("config-whatsapp-comprobantes").value.trim();
   const urlFuncionMercadoPago = document.getElementById("config-url-mp").value.trim();
+  const linkPagoMercadoPago = document.getElementById("config-link-pago-mp").value.trim();
   const emailjsServiceId = document.getElementById("config-emailjs-service").value.trim();
   const emailjsTemplateId = document.getElementById("config-emailjs-template").value.trim();
   const emailjsPublicKey = document.getElementById("config-emailjs-publickey").value.trim();
@@ -125,6 +127,7 @@ async function guardarConfig(evento) {
       cuilMercadoPago,
       whatsappComprobantes,
       urlFuncionMercadoPago,
+      linkPagoMercadoPago,
       emailjsServiceId,
       emailjsTemplateId,
       emailjsPublicKey,
