@@ -41,7 +41,8 @@ async function cargarDatosMercadoPago() {
           titular: config.titularMercadoPago || "",
           cuil: config.cuilMercadoPago || "",
           whatsappComprobantes: config.whatsappComprobantes || "",
-          urlFuncion: config.urlFuncionMercadoPago || null
+          urlFuncion: config.urlFuncionMercadoPago || null,
+          linkPago: config.linkPagoMercadoPago || null
         };
       }
 
@@ -93,6 +94,23 @@ function actualizarNotaMetodoPago() {
 
   if (metodo === "mercadopago" && datosMercadoPago?.urlFuncion) {
     nota.innerHTML = `Al confirmar, te vamos a redirigir a Mercado Pago para pagar con tarjeta, dinero en cuenta, o QR.`;
+    nota.classList.remove("oculto");
+    return;
+  }
+
+  // Mercado Pago con "link de pago" de monto abierto: no es cobro 100%
+  // automático (el cliente tiene que escribir el monto a mano al llegar
+  // a Mercado Pago), pero sí es el checkout oficial, con tarjeta y cuotas.
+  if (metodo === "mercadopago" && datosMercadoPago?.linkPago) {
+    const totalAproximado = calcularTotal(obtenerCarrito());
+    nota.innerHTML = `
+      Vas a pagar con el checkout oficial de Mercado Pago (tarjeta, cuotas, saldo en cuenta).<br />
+      Cuando se abra, escribí este monto: <strong>$${totalAproximado}</strong> (puede cambiar un poco si sumás envío).<br />
+      <a href="${datosMercadoPago.linkPago}" target="_blank" rel="noopener"
+         style="display:inline-block;margin-top:0.5rem;padding:0.6rem 1rem;background:var(--color-acento);color:#fff;border-radius:4px;text-decoration:none;font-weight:600;">
+        Abrir Mercado Pago para pagar
+      </a>
+    `;
     nota.classList.remove("oculto");
     return;
   }
